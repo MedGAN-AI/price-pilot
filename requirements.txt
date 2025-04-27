@@ -3,4 +3,3 @@ pylint
 pytest-cov
 black
 ipython
-psycopg2-binary

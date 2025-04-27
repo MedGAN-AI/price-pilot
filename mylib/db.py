@@ -9,15 +9,16 @@ load_dotenv()
 url = os.getenv("SUPABASE_URL")
 key = os.getenv("SUPABASE_KEY")
 
+
 # Create the Supabase client
 supabase: Client = create_client(url, key)
 
 # Test connection by fetching data
 def get_data():
-    # Fetch data from a table
-    data = supabase.table("data").select("*").execute()
-    return data.data  # Return the data from the response
+    response = supabase.table("data").select("*").limit(10).execute()  # Set a higher limit
+    print(response.data)
+    print(response)
 
-print(get_data())
 
+get_data()
 

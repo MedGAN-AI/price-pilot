@@ -6,9 +6,9 @@ test:
 	python -m pytest -vv test_*.py 
 
 format:
-	black *.py mylib/*.py
+	black *.py
 
 lint:
-	pylint --disable=R,C,E1120 *.py mylib/*.py
+	pylint --disable=R,C,E1120 *.py 
 
 all: install lint test

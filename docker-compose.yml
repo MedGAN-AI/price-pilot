@@ -1,0 +1,8 @@
+services:
+  pricepilot:
+    image: pricepilot
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8000:8000

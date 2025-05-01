@@ -6,3 +6,11 @@ services:
       dockerfile: ./Dockerfile
     ports:
       - 8000:8000
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - DEMAND_MODEL_PATH=models/demand_forecast.joblib
+      - ELASTICITY_MODEL_PATH=models/price_elasticity.joblib
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models

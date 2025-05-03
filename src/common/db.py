@@ -3,7 +3,7 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 
 # Load environment variables from the .env file
-load_dotenv()
+load_dotenv(override=True)
 
 # Get the Supabase URL and key from the environment
 url = os.getenv("SUPABASE_URL")

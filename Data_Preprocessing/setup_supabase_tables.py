@@ -1,81 +1,62 @@
 """
-Setup Script for Supabase Tables
-
-This script creates the necessary tables in Supabase for the data pipeline.
-It will create:
-1. A cleaned transactions table
-2. A customer RFM summary table
-
-Note: You need Supabase permissions to create tables.
+Script to create the necessary tables in Supabase for the ETL pipeline.
 """
 
 import os
-import logging
-from supabase import create_client
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
-# Load env vars
+# Load environment variables
 load_dotenv()
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SERVICE_ROLE_KEY = os.getenv("SERVICE_ROLE_KEY")
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY")
 
-# Initialize Supabase client for RPC calls
-supabase = create_client(SUPABASE_URL, SERVICE_ROLE_KEY)  # uses service role key :contentReference[oaicite:6]{index=6}
+# Check for required environment variables
+if not supabase_url or not supabase_key:
+    raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in .env file")
 
-# Logger setup
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger(__name__)
+# Initialize Supabase client
+supabase: Client = create_client(supabase_url, supabase_key)
 
-def execute_sql(sql: str) -> bool:
-    """Run raw SQL via the void-returning RPC."""
-    res = supabase.rpc("execute_sql", {"p_sql": sql}).execute()
-    if res.error:
-        logger.error("RPC error: %s", res.error.message)
-        return False
-    return True
-
-# SQL to create the cleaned transactions table
-create_clean_table_sql = """
+# SQL to create the tables
+create_tables_sql = """
+-- Create the cleaned transactions table
 CREATE TABLE IF NOT EXISTS online_retail_clean (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "Invoice" TEXT,
-    "StockCode" TEXT,
+    "Invoice" TEXT NOT NULL,
+    "StockCode" TEXT NOT NULL,
     "Description" TEXT,
     "Quantity" INTEGER,
-    "InvoiceDate" TIMESTAMP,
-    "Price" DECIMAL(10,2),
+    "InvoiceDate" TIMESTAMP WITH TIME ZONE,
+    "Price" NUMERIC(10, 2),
     "Customer ID" TEXT,
     "Country" TEXT,
-    "TotalPrice" DECIMAL(10,2),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    "TotalPrice" NUMERIC(10, 2),
+    PRIMARY KEY ("Invoice", "StockCode")
 );
-CREATE INDEX IF NOT EXISTS idx_online_retail_clean_invoice ON online_retail_clean("Invoice");
-CREATE INDEX IF NOT EXISTS idx_online_retail_clean_customer ON online_retail_clean("Customer ID");
-CREATE INDEX IF NOT EXISTS idx_online_retail_clean_date ON online_retail_clean("InvoiceDate");
-"""
 
-# SQL to create the RFM summary table
-create_rfm_table_sql = """
+-- Create table for RFM analysis
 CREATE TABLE IF NOT EXISTS customer_rfm (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    "CustomerID" TEXT UNIQUE,
+    "Customer ID" TEXT PRIMARY KEY,
     "Recency" INTEGER,
     "Frequency" INTEGER,
-    "Monetary" DECIMAL(12,2),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    "Monetary" NUMERIC(12, 2)
 );
-CREATE INDEX IF NOT EXISTS idx_customer_rfm_customer ON customer_rfm("CustomerID");
+
+-- Add indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_online_retail_clean_customer ON online_retail_clean ("Customer ID");
+CREATE INDEX IF NOT EXISTS idx_online_retail_clean_invoice_date ON online_retail_clean ("InvoiceDate");
 """
 
-def main():
-    logger.info("Creating online_retail_clean…")
-    if execute_sql(create_clean_table_sql):
-        logger.info("✅ online_retail_clean table created or already exists")
-    logger.info("Creating customer_rfm…")
-    if execute_sql(create_rfm_table_sql):
-        logger.info("✅ customer_rfm table created or already exists")
+def create_tables():
+    print("Creating tables in Supabase...")
+    try:
+        # Execute the SQL
+        result = supabase.rpc('exec_sql', {'query': create_tables_sql}).execute()
+        print("Tables created successfully!")
+        return True
+    except Exception as e:
+        print(f"Error creating tables: {e}")
+        return False
 
 if __name__ == "__main__":
-    main()
+    create_tables()

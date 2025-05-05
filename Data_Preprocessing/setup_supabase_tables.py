@@ -1,6 +1,10 @@
 """
 Script to create the necessary tables in Supabase for the ETL pipeline.
 """
+#Currently this script is not used in the pipeline, but it can be used to create the tables manually if needed.
+
+
+
 
 import os
 from dotenv import load_dotenv

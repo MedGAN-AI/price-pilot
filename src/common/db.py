@@ -15,7 +15,7 @@ supabase: Client = create_client(url, key)
 
 # Test connection by fetching data
 def get_data():
-    response = supabase.table("data").select("*").limit(10).execute()  # Set a higher limit
+    response = supabase.table("g").select("*").execute()  # Set a higher limit
     print(response.data)
     print(response)
 

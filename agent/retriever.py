@@ -7,6 +7,8 @@ from langchain.tools import Tool
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any
 
+'''this implementation is for the retriever tool we can change it later to use the write database'''
+
 # Load environment variables
 load_dotenv(override=True)
 

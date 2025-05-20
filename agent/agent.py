@@ -2,7 +2,7 @@
 import os
 import base64
 from tools import *
-from retriever import *
+from retriever import retrieval_tool
 from dotenv import load_dotenv
 from typing import List, TypedDict, Annotated, Optional
 from langchain_core.messages import AnyMessage, SystemMessage, HumanMessage

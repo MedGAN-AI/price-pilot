@@ -15,6 +15,7 @@ recommend_tool = Tool(
 )
 '''
 
+
 from typing import List
 from langchain_core.tools import Tool
 
@@ -31,7 +32,7 @@ def _recommend_products(query: str) -> str:
     """
     try:
         # Import here to handle potential import errors gracefully
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         # Test if supabase client is properly initialized
         if not supabase:

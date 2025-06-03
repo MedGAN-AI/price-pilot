@@ -11,3 +11,5 @@ order_tool = Tool(
     func=_check_order_status,
     description="Gets the status of a customer order. Input: an order ID string."
 )
+
+# this function for the status we can do other for the ordering

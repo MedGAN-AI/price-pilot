@@ -1,0 +1,10 @@
+# File: src/agents/InventoryAgent/config.yaml
+
+# Minimum quantity at which a product is considered "low stock"
+low_stock_threshold: 10
+
+# Maximum number of items to display when returning a list of low‐stock SKUs
+max_low_stock_items: 5
+
+# Whether to enable verbose logging for inventory checks
+verbose: true

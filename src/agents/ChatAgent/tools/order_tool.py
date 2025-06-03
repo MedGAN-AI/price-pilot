@@ -26,7 +26,7 @@ def _check_order_status(order_id: str) -> str:
     """
     try:
         # Import here to handle potential import errors gracefully
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the order system is currently unavailable. Please try again later."
@@ -125,7 +125,7 @@ def _place_simple_order(order_request: str) -> str:
     In production, this would integrate with your full order processing system.
     """
     try:
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the ordering system is currently unavailable. Please try again later."

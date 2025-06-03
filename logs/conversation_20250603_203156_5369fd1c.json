@@ -1,0 +1,41 @@
+{
+  "conversation_id": "5369fd1c-8bb3-4412-b8d2-6efbc0989052",
+  "timestamp": "2025-06-03T20:31:56.791746",
+  "stateful": true,
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi",
+      "timestamp": "2025-06-03T20:31:56.791746"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi there! How can I help you today?",
+      "timestamp": "2025-06-03T20:31:56.791746"
+    },
+    {
+      "role": "user",
+      "content": "can you call the order tool ?",
+      "timestamp": "2025-06-03T20:31:56.791746"
+    },
+    {
+      "role": "assistant",
+      "content": "Agent stopped due to iteration limit or time limit.",
+      "timestamp": "2025-06-03T20:31:56.791746"
+    }
+  ],
+  "statistics": {
+    "start_time": "2025-06-03T20:27:19.922364",
+    "duration": "0:04:36.869382",
+    "messages_count": 4,
+    "user_messages_count": 2,
+    "assistant_messages_count": 2,
+    "average_response_time": 3.768466353416443,
+    "tokens_used": {
+      "prompt": 0,
+      "completion": 0,
+      "total": 0
+    },
+    "errors_count": 0
+  }
+}

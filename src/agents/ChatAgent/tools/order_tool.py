@@ -24,17 +24,23 @@ def _check_order_status(order_id: str) -> str:
     Check the status of a customer order by order ID.
     Returns order details, items, and delivery information.
     """
-    try:
-        # Import here to handle potential import errors gracefully
+    try:        # Import here to handle potential import errors gracefully
         from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the order system is currently unavailable. Please try again later."
-        
-        # Clean the order ID (remove any extra whitespace/quotes)
+          # Clean the order ID (remove any extra whitespace/quotes)
         order_id = order_id.strip().strip('"\'')
         
-        # Get order details with user information
+        # Validate UUID format
+        try:
+            uuid.UUID(order_id)
+        except ValueError:
+            return (
+                f"❌ Invalid order ID format: '{order_id}'\n\n"
+                "Order IDs should be in UUID format (e.g., 123e4567-e89b-12d3-a456-426614174000).\n"
+                "You can find your order ID in your confirmation email or account dashboard."
+            )# Get order details with user information
         order_response = (
             supabase
             .table("orders")
@@ -122,8 +128,7 @@ def _check_order_status(order_id: str) -> str:
 def _place_simple_order(order_request: str) -> str:
     """
     Place a simple order. For demo purposes, this creates a basic order.
-    In production, this would integrate with your full order processing system.
-    """
+    In production, this would integrate with your full order processing system.    """
     try:
         from integrations.supabase_client import supabase
         
@@ -181,7 +186,7 @@ def _check_order_status(order_id: str) -> str:
     Returns order details, items, and delivery status.
     """
     try:
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the order system is currently unavailable. Please try again later."
@@ -266,7 +271,7 @@ def _place_order(order_data: str) -> str:
     Format: {"user_email": "email", "items": [{"sku": "SKU", "quantity": 1}], "shipping_address": "address", "payment_method": "credit_card"}
     """
     try:
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the order system is currently unavailable. Please try again later."
@@ -421,7 +426,7 @@ def _update_order_status(update_data: str) -> str:
     Format: {"order_id": "uuid", "status": "confirmed|shipped|delivered|cancelled"}
     """
     try:
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the order system is currently unavailable. Please try again later."
@@ -463,7 +468,7 @@ def _get_user_orders(user_email: str) -> str:
     Get all orders for a specific user by email.
     """
     try:
-        from src.integrations.supabase_client import supabase
+        from integrations.supabase_client import supabase
         
         if not supabase:
             return "Sorry, the order system is currently unavailable. Please try again later."

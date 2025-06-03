@@ -28,8 +28,7 @@ def _recommend_products(query: str) -> str:
     Input:
         query (str): free-text search, e.g. "red shoes size 10"
     Returns:
-        str: formatted list of up to 5 matching products, or an error/no-results message.
-    """
+        str: formatted list of up to 5 matching products, or an error/no-results message.    """
     try:
         # Import here to handle potential import errors gracefully
         from integrations.supabase_client import supabase
@@ -37,15 +36,13 @@ def _recommend_products(query: str) -> str:
         # Test if supabase client is properly initialized
         if not supabase:
             return "Sorry, the product database is currently unavailable. Please try again later."
-        
-        # 1) Query Supabase: search name ILIKE '%query%' OR description ILIKE '%query%'
-        #    Note: we build a filter string for OR, since supabase-py requires .or_() format.
+            # 1) Query Supabase: search name ILIKE '%query%' OR description ILIKE '%query%'
+            #    Note: we build a filter string for OR, since supabase-py requires .or_() format.
         or_filter = f"name.ilike.%{query}%,description.ilike.%{query}%"
-        
         response = (
             supabase
             .table("products")
-            .select("id, sku, name, price")
+            .select("id, sku, name, price, description")
             .or_(or_filter)
             .limit(5)
             .execute()
@@ -63,15 +60,26 @@ def _recommend_products(query: str) -> str:
         products = getattr(response, "data", None)
         if not products:
             # No matches
-            return f"No products found matching '{query}'. Try different keywords like 'shoes', 'shirt', 'jacket', etc."
-
-        # 4) Format up to 5 results
-        lines: List[str] = [f"Top matches for '{query}':"]
+            return f"No products found matching '{query}'. Try different keywords like 'shoes', 'shirt', 'jacket', etc."        # 4) Format up to 5 results
+        lines: List[str] = [f"🛍️ Top matches for '{query}':"]
         for idx, prod in enumerate(products, start=1):
             name = prod.get("name", "(no name)")
             sku = prod.get("sku", "(no sku)")
             price = prod.get("price", 0.00)
-            lines.append(f"{idx}. {name} (SKU: {sku}) — ${price:.2f}")
+            description = prod.get("description", "")
+            
+            product_line = f"{idx}. **{name}** (SKU: {sku}) — ${price:.2f}"
+            if description:
+                # Truncate description if too long
+                desc_short = description[:100] + "..." if len(description) > 100 else description
+                product_line += f"\n   📝 {desc_short}"
+            
+            lines.append(product_line)
+
+        lines.append(f"\n💡 To place an order, please let me know:")
+        lines.append("   • Which product you want")
+        lines.append("   • Size/variant (if applicable)")
+        lines.append("   • Quantity needed")
 
         return "\n".join(lines)
         

@@ -1,0 +1,21 @@
+model:
+  path: models/arima_model.pkl
+  llm_model: gpt-3.5-turbo
+
+prompts:
+  forecast_prompt: prompts/forecast_prompt.txt
+
+forecast:
+  max_steps: 365
+  default_steps: 30
+
+logging:
+  level: INFO
+  log_file: logs/forecast_agent.log
+
+memory:
+  buffer_key: chat_history
+
+output:
+  enable_llm_response: true
+  use_fallback_response: true

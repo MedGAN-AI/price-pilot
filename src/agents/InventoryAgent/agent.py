@@ -1,7 +1,8 @@
 import os
+import yaml
 from typing import Any, Dict, TypedDict, Annotated, List
 
-# Load environment variables (e.g., GOOGLE_API_KEY)
+# Load environment variables
 from dotenv import load_dotenv
 
 # LangChain imports
@@ -14,14 +15,19 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 # LangGraph imports
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
 
-# Import our two Tool objects (relative import since we're inside ChatAgent/)
-from .tools.order_tool import order_tool
-from .tools.recommend_tool import recommend_tool
+# Import inventory tools
+from .tools.inventory_check_tool import inventory_check_tool
+from .tools.low_stock_tool import low_stock_tool
+from .tools.inventory_update_tool import inventory_update_tool
 
 load_dotenv()
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Must be set in your .env
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+# Load configuration
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    config = yaml.safe_load(f)
 
 # Instantiate the Google generative AI LLM (Gemini)
 llm = ChatGoogleGenerativeAI(
@@ -30,59 +36,31 @@ llm = ChatGoogleGenerativeAI(
     api_key=GOOGLE_API_KEY
 )
 
-# Collect all tools (order_tool, recommend_tool) plus a "Final Answer" tool
+# Collect all inventory tools plus a "Final Answer" tool
 tools = [
-    order_tool,
-    recommend_tool,
+    inventory_check_tool,
+    low_stock_tool,
+    inventory_update_tool,
     Tool(
         name="Final Answer",
-        func=lambda x: x,  
+        func=lambda x: x,
         description="Use this tool to output your final answer to the user."
     )
 ]
 
-# Fixed system prompt - removed problematic variables and improved format
-system_prompt = """You are a helpful shopping assistant for a retail company.
-You help customers find products, compare prices, and answer questions.
+# Load system prompt from file
+PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "inventory_prompt.txt")
+with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+    system_prompt_template = f.read()
 
-You have access to the following tools:
-{tools}
+# Format the system prompt with tools information
+tool_names = [tool.name for tool in tools if tool.name != "Final Answer"]
+tool_descriptions = "\n".join([f"- {tool.name}: {tool.description}" for tool in tools])
 
-Use a json blob to specify a tool by providing an action key (tool name) and an action_input key (tool input).
-
-Valid "action" values: "Final Answer" or {tool_names}
-
-Provide only ONE action per JSON blob, as shown:
-
-```json
-{{
-  "action": "tool_name",
-  "action_input": "tool input"
-}}
-```
-
-Follow this format:
-Question: input question to answer
-Thought: consider previous and subsequent steps
-Action:
-```json
-{{
-  "action": "tool_name", 
-  "action_input": "input"
-}}
-```
-Observation: action result
-... (repeat Thought/Action/Observation N times)
-Thought: I know what to respond
-Action:
-```json
-{{
-  "action": "Final Answer",
-  "action_input": "final response"
-}}
-```
-
-Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary. Respond directly if appropriate."""
+system_prompt = system_prompt_template.format(
+    tools=tool_descriptions,
+    tool_names=", ".join([f'"{name}"' for name in tool_names])
+)
 
 # Simplified human template
 human_template = """{input}
@@ -100,36 +78,36 @@ prompt = ChatPromptTemplate.from_messages([
 agent = create_structured_chat_agent(llm, tools, prompt)
 
 # Wrap it in an AgentExecutor to handle intermediate steps
-agent_executor = AgentExecutor.from_agent_and_tools(
+inventory_agent_executor = AgentExecutor.from_agent_and_tools(
     agent=agent,
     tools=tools,
-    verbose=True,
+    verbose=config.get("verbose", True),
     handle_parsing_errors=True,
     max_iterations=10,
     return_intermediate_steps=True
 )
 
 # Define the shared state type for LangGraph
-class AgentState(TypedDict):
+class InventoryAgentState(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
     intermediate_steps: List
 
 # Helper to initialize a fresh state
-def initialize_state() -> AgentState:
+def initialize_inventory_state() -> InventoryAgentState:
     return {
         "messages": [],
         "intermediate_steps": []
     }
 
 # "assistant" node: calls the AgentExecutor on the last user message
-def assistant(state: AgentState) -> Dict[str, Any]:
+def inventory_assistant(state: InventoryAgentState) -> Dict[str, Any]:
     try:
         # Extract the user's latest message content
         user_message = state["messages"][-1].content
         chat_history = state["messages"][:-1]
 
         # Invoke the AgentExecutor
-        result = agent_executor.invoke({
+        result = inventory_agent_executor.invoke({
             "input": user_message,
             "chat_history": chat_history
         })
@@ -145,20 +123,20 @@ def assistant(state: AgentState) -> Dict[str, Any]:
             "intermediate_steps": result.get("intermediate_steps", [])
         }
     except Exception as e:
-        error_msg = f"I apologize, but I encountered an error: {str(e)}. Please try again or rephrase your request."
+        error_msg = f"I apologize, but I encountered an error while checking inventory: {str(e)}. Please try again or provide a valid SKU."
         return {
             "messages": [AIMessage(content=error_msg)],
             "intermediate_steps": []
         }
 
 # "tools" node: placeholder (AgentExecutor already ran the tool), just return state
-def tool_node(state: AgentState) -> Dict[str, Any]:
+def inventory_tool_node(state: InventoryAgentState) -> Dict[str, Any]:
     return state
 
 # Build the LangGraph StateGraph
-builder = StateGraph(AgentState)
-builder.add_node("assistant", assistant)
-builder.add_node("tools", tool_node)
+builder = StateGraph(InventoryAgentState)
+builder.add_node("assistant", inventory_assistant)
+builder.add_node("tools", inventory_tool_node)
 
 # If intermediate_steps is non-empty, go to the tools node; else, end
 builder.add_edge(START, "assistant")
@@ -173,31 +151,99 @@ builder.add_conditional_edges(
 builder.add_edge("tools", "assistant")
 
 # Compile the graph
-shopping_assistant = builder.compile()
+inventory_assistant_graph = builder.compile()
 
-# Allow running this file standalone for a quick test
+# Class-based approach for easy integration
+class InventoryAgent:
+    """
+    Inventory Agent that handles stock level queries, low stock alerts,
+    and basic inventory management operations.
+    """
+    
+    def __init__(self):
+        self.agent_executor = inventory_agent_executor
+        self.graph = inventory_assistant_graph
+        self.config = config
+    
+    def check_stock(self, sku: str) -> str:
+        """Check stock level for a specific SKU"""
+        try:
+            result = self.agent_executor.invoke({
+                "input": f"Check stock level for SKU: {sku}"
+            })
+            return result["output"]
+        except Exception as e:
+            return f"Error checking stock for {sku}: {str(e)}"
+    
+    def get_low_stock_items(self, limit: int = None) -> str:
+        """Get list of items with low stock"""
+        try:
+            limit = limit or self.config.get("max_low_stock_items", 5)
+            result = self.agent_executor.invoke({
+                "input": f"Show me low stock items (limit: {limit})"
+            })
+            return result["output"]
+        except Exception as e:
+            return f"Error getting low stock items: {str(e)}"
+    
+    def update_inventory(self, sku: str, quantity: int, operation: str = "set") -> str:
+        """Update inventory for a specific SKU"""
+        try:
+            result = self.agent_executor.invoke({
+                "input": f"Update inventory for SKU {sku}: {operation} quantity to {quantity}"
+            })
+            return result["output"]
+        except Exception as e:
+            return f"Error updating inventory for {sku}: {str(e)}"
+    
+    def process_query(self, query: str) -> str:
+        """Process any inventory-related query"""
+        try:
+            result = self.agent_executor.invoke({"input": query})
+            return result["output"]
+        except Exception as e:
+            return f"Error processing query: {str(e)}"
+    
+    def process_with_graph(self, query: str) -> str:
+        """Process query using LangGraph"""
+        try:
+            initial_state = initialize_inventory_state()
+            initial_state["messages"] = [
+                SystemMessage(content="You are an Inventory Agent for checking product stock levels."),
+                HumanMessage(content=query)
+            ]
+            initial_state["intermediate_steps"] = []
+            
+            response_state = self.graph.invoke(initial_state)
+            return response_state["messages"][-1].content
+        except Exception as e:
+            return f"Error processing query with graph: {str(e)}"
+
+# Allow running this file standalone for testing
 if __name__ == "__main__":
-    # Test 1: run AgentExecutor directly
-    print("Testing AgentExecutor...")
-    try:
-        test_result = agent_executor.invoke({
-            "input": "What is the price of red Christmas decorations?"
-        })
-        print("AgentExecutor output:\n", test_result["output"])
-    except Exception as e:
-        print(f"AgentExecutor test failed: {e}")
-
-    # Test 2: run via LangGraph
-    print("\nTesting LangGraph...")
-    try:
-        initial_state = initialize_state()
-        # Seed with a SystemMessage + HumanMessage
-        initial_state["messages"] = [
-            SystemMessage(content="You are a helpful shopping assistant for a retail company."),
-            HumanMessage(content="What is the price of red Christmas decorations?")
-        ]
-        initial_state["intermediate_steps"] = []
-        response_state = shopping_assistant.invoke(initial_state)
-        print("LangGraph response:\n", response_state["messages"][-1].content)
-    except Exception as e:
-        print(f"LangGraph test failed: {e}")
+    # Test the inventory agent
+    print("=== Testing Inventory Agent ===\n")
+    
+    agent = InventoryAgent()
+    
+    # Test 1: Check stock for a specific SKU
+    print("Test 1: Check stock for SKU")
+    result = agent.check_stock("SHOES-RED-001")
+    print(f"Result: {result}\n")
+    
+    # Test 2: Get low stock items
+    print("Test 2: Get low stock items")
+    result = agent.get_low_stock_items()
+    print(f"Result: {result}\n")
+    
+    # Test 3: Process general query
+    print("Test 3: General inventory query")
+    result = agent.process_query("What products are running low on stock?")
+    print(f"Result: {result}\n")
+    
+    # Test 4: LangGraph version
+    print("Test 4: LangGraph version")
+    result = agent.process_with_graph("Check inventory status for all products")
+    print(f"LangGraph Result: {result}\n")
+    
+    print("✅ All inventory agent tests completed!")

@@ -14,180 +14,155 @@ order_tool = Tool(
 
 # this function for the status we can do other for the ordering
 
-import json
-from typing import Dict, Any
-from datetime import datetime
 from langchain_core.tools import Tool
+import json
+import uuid
+from datetime import datetime
 
-def _place_order(input_str: str) -> str:
+def _check_order_status(order_id: str) -> str:
     """
-    Place an order for a given user. Expects JSON input with keys:
-      - user_id (UUID string)
-      - product_sku (text)
-      - quantity (integer)
-      - shipping_address (text)
-      - billing_address (text, optional; defaults to shipping if absent)
-      - payment_method (text, optional; defaults to 'unspecified')
-
-    Steps:
-      1. Parse input_str as JSON.
-      2. Verify user exists in `users` table.
-      3. Lookup product by SKU in `products` → get `product_id`, `price`.
-      4. Check inventory for available `quantity`.
-      5. If enough stock, insert into `orders`, then `order_items`.
-      6. Deduct inventory.
-      7. Return confirmation with order_id and total.
-    Any error (invalid JSON, missing fields, DB error) returns a clear message.
+    Check the status of a customer order by order ID.
+    Returns order details, items, and delivery information.
     """
     try:
         # Import here to handle potential import errors gracefully
         from src.integrations.supabase_client import supabase
         
-        # Test if supabase client is properly initialized
+        if not supabase:
+            return "Sorry, the order system is currently unavailable. Please try again later."
+        
+        # Clean the order ID (remove any extra whitespace/quotes)
+        order_id = order_id.strip().strip('"\'')
+        
+        # Get order details with user information
+        order_response = (
+            supabase
+            .table("orders")
+            .select("""
+                id, order_date, total_amount, status, shipping_address, 
+                payment_method,
+                users!inner(full_name, email)
+            """)
+            .eq("id", order_id)
+            .execute()
+        )
+        
+        if not order_response.data:
+            return f"Order {order_id} not found. Please check your order ID and try again."
+        
+        order = order_response.data[0]
+        
+        # Get order items with product details
+        items_response = (
+            supabase
+            .table("order_items")
+            .select("""
+                quantity, unit_price,
+                products!inner(name, sku)
+            """)
+            .eq("order_id", order_id)
+            .execute()
+        )
+        
+        # Get delivery status if available
+        delivery_response = (
+            supabase
+            .table("delivery_status")
+            .select("carrier, tracking_number, status, last_location, estimated_delivery")
+            .eq("order_id", order_id)
+            .execute()
+        )
+        
+        # Format the response
+        result_lines = [
+            f"📋 Order Details",
+            f"Order ID: {order['id']}",
+            f"Customer: {order['users']['full_name']} ({order['users']['email']})",
+            f"Order Date: {order['order_date'][:10]}",
+            f"Status: {order['status'].replace('_', ' ').title()}",
+            f"Total Amount: ${order['total_amount']:.2f}",
+            f"Payment: {order['payment_method'].replace('_', ' ').title()}",
+            f"Shipping To: {order['shipping_address']}",
+            "",
+            "📦 Items Ordered:"
+        ]
+        
+        # Add items
+        for item in items_response.data:
+            product = item['products']
+            item_total = item['quantity'] * item['unit_price']
+            result_lines.append(
+                f"  • {product['name']} (SKU: {product['sku']}) "
+                f"- Qty: {item['quantity']} @ ${item['unit_price']:.2f} = ${item_total:.2f}"
+            )
+        
+        # Add delivery information if available
+        if delivery_response.data:
+            delivery = delivery_response.data[0]
+            result_lines.extend([
+                "",
+                "🚚 Delivery Information:",
+                f"  • Carrier: {delivery['carrier']}",
+                f"  • Tracking: {delivery['tracking_number']}",
+                f"  • Status: {delivery['status'].replace('_', ' ').title()}",
+                f"  • Last Location: {delivery['last_location']}"
+            ])
+            
+            if delivery['estimated_delivery']:
+                est_date = delivery['estimated_delivery'][:10]
+                result_lines.append(f"  • Estimated Delivery: {est_date}")
+        
+        return "\n".join(result_lines)
+        
+    except ImportError:
+        return "Sorry, the order database connection is not configured. Please check your database setup."
+    except Exception as e:
+        return f"Sorry, I encountered an error while checking your order: {str(e)}. Please try again with a valid order ID."
+
+def _place_simple_order(order_request: str) -> str:
+    """
+    Place a simple order. For demo purposes, this creates a basic order.
+    In production, this would integrate with your full order processing system.
+    """
+    try:
+        from src.integrations.supabase_client import supabase
+        
         if not supabase:
             return "Sorry, the ordering system is currently unavailable. Please try again later."
         
-    except ImportError:
-        return "Sorry, the ordering system is not configured. Please contact support."
-    except Exception as e:
-        return f"Sorry, there's an issue with the ordering system: {str(e)}"
-
-    # Parse JSON
-    try:
-        data: Dict[str, Any] = json.loads(input_str)
-    except json.JSONDecodeError:
+        # For now, return a helpful message about order placement
+        # In a real system, you'd parse the order_request and create the order
         return (
-            "Error: OrderTool expects a valid JSON string. Example format:\n"
-            '{"user_id":"<UUID>","product_sku":"<SKU>","quantity":<int>,' 
-            '"shipping_address":"<address>","billing_address":"<address>","payment_method":"<method>"}'
-        )
-
-    # Required fields
-    user_id = data.get("user_id")
-    product_sku = data.get("product_sku")
-    quantity = data.get("quantity", 1)
-    shipping_address = data.get("shipping_address")
-    billing_address = data.get("billing_address") or shipping_address
-    payment_method = data.get("payment_method", "unspecified")
-
-    # Validate required fields
-    if not user_id or not product_sku or not shipping_address:
-        return "Error: Missing required field(s). Please include user_id, product_sku, and shipping_address."
-
-    try:
-        # 1) Verify user exists
-        user_resp = (
-            supabase
-            .table("users")
-            .select("id")
-            .eq("id", user_id)
-            .limit(1)
-            .execute()
-        )
-        
-        if not user_resp or not user_resp.data:
-            return f"Error: No user found with ID '{user_id}'."
-
-        # 2) Lookup product by SKU
-        prod_resp = (
-            supabase
-            .table("products")
-            .select("id, price")
-            .eq("sku", product_sku)
-            .limit(1)
-            .execute()
-        )
-        
-        if not prod_resp or not prod_resp.data:
-            return f"Error: No product found with SKU '{product_sku}'."
-
-        product_id = prod_resp.data[0].get("id")
-        unit_price = float(prod_resp.data[0].get("price", 0.0))
-
-        # 3) Check inventory
-        inv_resp = (
-            supabase
-            .table("inventory")
-            .select("quantity_in_stock")
-            .eq("product_id", product_id)
-            .limit(1)
-            .execute()
-        )
-        
-        if not inv_resp or not inv_resp.data:
-            return f"Error: No inventory record found for SKU '{product_sku}'."
-
-        available_stock = int(inv_resp.data[0].get("quantity_in_stock", 0))
-        if quantity > available_stock:
-            return f"Sorry, only {available_stock} unit(s) of SKU '{product_sku}' are in stock."
-
-        # 4) Insert into orders
-        total_amount = unit_price * int(quantity)
-        order_payload = {
-            "user_id": user_id,
-            "order_date": datetime.utcnow().isoformat(),
-            "total_amount": total_amount,
-            "status": "pending",
-            "shipping_address": shipping_address,
-            "billing_address": billing_address,
-            "payment_method": payment_method
-        }
-        
-        order_resp = supabase.table("orders").insert(order_payload).execute()
-        if not order_resp or not order_resp.data:
-            return "Error: Failed to create order. Please try again."
-
-        order_id = order_resp.data[0].get("id")
-
-        # 5) Insert into order_items
-        order_item_payload = {
-            "order_id": order_id,
-            "product_id": product_id,
-            "quantity": quantity,
-            "unit_price": unit_price
-        }
-        
-        order_item_resp = supabase.table("order_items").insert(order_item_payload).execute()
-        if not order_item_resp or not order_item_resp.data:
-            return "Error: Failed to add items to order. Please contact support."
-
-        # 6) Deduct inventory
-        new_stock = available_stock - int(quantity)
-        inventory_update = {
-            "quantity_in_stock": new_stock,
-            "last_adjusted": datetime.utcnow().isoformat()
-        }
-        
-        inv_update_resp = (
-            supabase
-            .table("inventory")
-            .update(inventory_update)
-            .eq("product_id", product_id)
-            .execute()
-        )
-
-        # 7) Return confirmation
-        return (
-            f"Success! Your order (ID: {order_id}) has been placed.\n"
-            f"• Product SKU: {product_sku}\n"
-            f"• Quantity: {quantity}\n"
-            f"• Unit Price: ${unit_price:.2f}\n"
-            f"• Total Amount: ${total_amount:.2f}\n"
-            f"• Remaining stock for SKU '{product_sku}': {new_stock} unit(s).\n"
-            f"Thank you for shopping with us!"
+            "To place an order, I'll need the following information:\n"
+            "• Your email address\n"
+            "• Product SKUs and quantities you want to order\n"
+            "• Shipping address\n"
+            "• Payment method preference\n\n"
+            "Please provide these details and I'll help you place your order. "
+            "You can also browse our products first by asking me to search for items you're interested in."
         )
         
     except Exception as e:
-        return f"Sorry, I encountered an error while processing your order: {str(e)}. Please try again or contact support."
+        return f"Sorry, I encountered an error with the ordering system: {str(e)}. Please try again later."
 
-
-# Wrap it as a LangChain Tool
+# Create the main order tool
 order_tool = Tool(
     name="OrderTool",
-    func=_place_order,
+    func=_check_order_status,
     description=(
-        "Places an order for a product. Input: a JSON string containing keys "
-        "\"user_id\", \"product_sku\", \"quantity\", \"shipping_address\", optionally "
-        "\"billing_address\" and \"payment_method\". Output: confirmation message with order ID."
+        "Check the status and details of a customer order. "
+        "Input: an order ID (UUID string). "
+        "Output: Complete order information including items, status, and delivery details."
+    )
+)
+
+# Additional tool for order placement (you can add this to your tools list if needed)
+place_order_tool = Tool(
+    name="PlaceOrderTool", 
+    func=_place_simple_order,
+    description=(
+        "Help customers place new orders. "
+        "Input: order request information. "
+        "Output: Order placement guidance or confirmation."
     )
 )

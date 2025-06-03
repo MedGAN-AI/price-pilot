@@ -17,7 +17,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
 # Import our two Tool objects (relative import since we're inside ChatAgent/)
-from .tools.order_tool import order_tool
+from .tools.order_tool import order_tool, place_order_tool
 from .tools.recommend_tool import recommend_tool
 
 load_dotenv()
@@ -33,6 +33,7 @@ llm = ChatGoogleGenerativeAI(
 # Collect all tools (order_tool, recommend_tool) plus a "Final Answer" tool
 tools = [
     order_tool,
+    place_order_tool,
     recommend_tool,
     Tool(
         name="Final Answer",

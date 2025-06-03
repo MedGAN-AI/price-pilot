@@ -109,7 +109,7 @@ def initialize_state() -> AgentState:
 
 # “assistant” node: calls the AgentExecutor on the last user message
 def assistant(state: AgentState) -> Dict[str, Any]:
-    # Extract the user’s latest message content
+    # Extract the user's latest message content
     user_message = state["messages"][-1].content
     chat_history = state["messages"][:-1]
 
@@ -119,9 +119,14 @@ def assistant(state: AgentState) -> Dict[str, Any]:
         "chat_history": chat_history
     })
 
-    # Wrap the LLM’s output as an AIMessage and carry forward any intermediate steps
+    # Check if output is a dictionary with 'tool_input' key (happens with Final Answer)
+    content = result["output"]
+    if isinstance(content, dict) and "tool_input" in content:
+        content = content["tool_input"]
+
+    # Wrap the LLM's output as an AIMessage and carry forward any intermediate steps
     return {
-        "messages": [AIMessage(content=result["output"])],
+        "messages": [AIMessage(content=content)],
         "intermediate_steps": result.get("intermediate_steps", [])
     }
 

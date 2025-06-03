@@ -4,7 +4,7 @@ import joblib
 
 from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 
 # Load the pre-trained ARIMA model
@@ -40,7 +40,11 @@ prompt = ChatPromptTemplate.from_messages([
     ("placeholder", "{agent_scratchpad}"),
 ])
 
-llm = ChatOpenAI(model_name="gpt-4", temperature=0)
+llm = ChatGoogleGenerativeAI(
+    model="gemini-pro",
+    temperature=0,
+    google_api_key="AIzaSyDijydit4qNeEsYEVjgp_fJyLCs6kewD-A"  # or set as env var: GOOGLE_API_KEY
+)
 tools = [forecast_tool]
 
 agent = create_tool_calling_agent(llm, tools, prompt)

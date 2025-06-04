@@ -11,10 +11,10 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # --- For Shopping Assistant ---
 # from src.graphs.chat_graph import build_chat_graph as build_graph
-# GRAPH_NAME = "Shopping Assistant Chat"
+# GRAPH_NAME = "Shopping Assistant Chat
 
 # --- For Inventory Agent ---
-from src.graphs.invetory_graph import build_inventory_graph as build_graph
+from src.graphs.inventory_graph import build_inventory_graph as build_graph
 GRAPH_NAME = "Inventory Agent Chat"
 
 def main():

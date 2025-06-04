@@ -33,30 +33,13 @@ tools = [
     stock_by_name_tool,   # CheckStockByName
 ]
 
+# Load  prompt from file
+PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "inventory_prompt.txt")
+with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+    system_prompt = f.read()
+
 # Create a ReAct prompt template
-prompt = PromptTemplate.from_template("""
-You are an InventoryAgent for a retail company. Customers ask you about stock levels.
-
-You have access to the following tools:
-
-{tools}
-
-Use the following format:
-
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-Begin!
-
-Question: {input}
-Thought: {agent_scratchpad}
-""")
+prompt = PromptTemplate.from_template(system_prompt)
 
 # Create ReAct agent instead of structured chat agent
 agent = create_react_agent(llm, tools, prompt)

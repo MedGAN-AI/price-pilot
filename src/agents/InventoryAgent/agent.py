@@ -1,9 +1,13 @@
 import os
 import re
+import sys
 import yaml
 from typing import Any, Dict, TypedDict, Annotated, List
 
 from dotenv import load_dotenv
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+sys.path.insert(0, project_root)
 
 # LangChain imports
 from langchain.agents import AgentExecutor, create_react_agent
@@ -17,7 +21,7 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 
 # Import our two inventory tools
-from .tools.check_stock_tools import stock_by_sku_tool, stock_by_name_tool
+from tools.check_stock_tools import stock_by_sku_tool, stock_by_name_tool
 
 load_dotenv()
 

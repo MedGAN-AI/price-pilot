@@ -1,0 +1,14 @@
+model:
+  name: "llama3.2:1b"
+
+data:
+  products_csv: "data/products.csv"
+
+embedding_model:
+  name: "all-MiniLM-L6-v2"
+
+faiss:
+  top_k: 3
+
+logging:
+  level: "INFO"

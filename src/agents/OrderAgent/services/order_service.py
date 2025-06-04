@@ -1,9 +1,10 @@
 """
-Order Service Layer
+Order Service Layer - Fixed for Actual Database Schema
 Handles all order-related database operations with Supabase
 """
 import os
 import uuid
+import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
@@ -17,9 +18,11 @@ class OrderService:
     """Service class for order management operations."""
     
     def __init__(self):
-        """Initialize Supabase client."""        # Load environment variables first
-        load_dotenv()
+        """Initialize Supabase client and logger."""
+        # Setup logging
+        self.logger = logging.getLogger(__name__)
         
+        # Load environment variables
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_KEY")
         
@@ -30,12 +33,12 @@ class OrderService:
     
     def create_order(self, customer_email: str, customer_name: str, items: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Create a new order with order items.
+        Create a new order with order items following actual database schema.
         
         Args:
             customer_email: Customer's email address
             customer_name: Customer's name
-            items: List of order items with 'sku', 'product_name', 'quantity', 'unit_price'
+            items: List of order items with 'sku', 'product_name', 'quantity', 'unit_price', 'product_id'
         
         Returns:
             Dict with order details and order_id
@@ -54,17 +57,24 @@ class OrderService:
             if len(items) > 50:
                 raise ValueError(f"Order has {len(items)} items, exceeding maximum of 50 items per order")
             
+            # Find or create user
+            user = self._find_or_create_user(customer_email, customer_name)
+            if not user:
+                raise Exception("Failed to find or create user")
+            
             # Generate order ID
             order_id = str(uuid.uuid4())
             
-            # Create order record
+            # Create order record using actual database schema
             order_data = {
-                'order_id': order_id,
-                'customer_email': customer_email,
-                'customer_name': customer_name,
-                'status': 'pending',
+                'id': order_id,
+                'user_id': user['id'],
+                'order_date': datetime.utcnow().isoformat(),
                 'total_amount': float(total_amount),
-                'currency': 'USD',
+                'status': 'pending',
+                'shipping_address': 'TBD - Address collection needed',  # Placeholder
+                'billing_address': 'TBD - Address collection needed',   # Placeholder
+                'payment_method': 'credit_card',  # Default
                 'created_at': datetime.utcnow().isoformat(),
                 'updated_at': datetime.utcnow().isoformat()
             }
@@ -75,18 +85,17 @@ class OrderService:
             if not order_result.data:
                 raise Exception("Failed to create order")
             
-            # Create order items
+            # Create order items using actual schema (product_id, not sku)
             order_items_data = []
             for item in items:
                 order_items_data.append({
-                    'order_item_id': str(uuid.uuid4()),
+                    'id': str(uuid.uuid4()),
                     'order_id': order_id,
-                    'product_sku': item['sku'],
-                    'product_name': item['product_name'],
+                    'product_id': item['product_id'],  # Use product_id from validation
                     'quantity': item['quantity'],
                     'unit_price': float(item['unit_price']),
-                    'line_total': float(Decimal(str(item['quantity'])) * Decimal(str(item['unit_price']))),
-                    'created_at': datetime.utcnow().isoformat()
+                    'created_at': datetime.utcnow().isoformat(),
+                    'updated_at': datetime.utcnow().isoformat()
                 })
             
             # Insert order items
@@ -94,7 +103,7 @@ class OrderService:
             
             if not items_result.data:
                 # Rollback order if items creation fails
-                self.supabase.table('orders').delete().eq('order_id', order_id).execute()
+                self.supabase.table('orders').delete().eq('id', order_id).execute()
                 raise Exception("Failed to create order items")
             
             return {
@@ -103,10 +112,13 @@ class OrderService:
                 'status': 'pending',
                 'total_amount': float(total_amount),
                 'items_count': len(items),
+                'customer_email': customer_email,
+                'customer_name': customer_name,
                 'message': f"Order {order_id} created successfully"
             }
             
         except Exception as e:
+            self.logger.error(f"Error creating order: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
@@ -115,7 +127,7 @@ class OrderService:
     
     def get_order_status(self, order_id: str) -> Dict[str, Any]:
         """
-        Get order status and details.
+        Get order status and details using actual database schema.
         
         Args:
             order_id: The order ID to check
@@ -124,8 +136,12 @@ class OrderService:
             Dict with order details or error message
         """
         try:
-            # Get order details
-            order_result = self.supabase.table('orders').select('*').eq('order_id', order_id).execute()
+            # Get order details with user information
+            order_result = self.supabase.table('orders').select('''
+                id, order_date, total_amount, status, shipping_address, 
+                billing_address, payment_method, created_at, updated_at,
+                users!inner(full_name, email)
+            ''').eq('id', order_id).execute()
             
             if not order_result.data:
                 return {
@@ -136,24 +152,40 @@ class OrderService:
             
             order = order_result.data[0]
             
-            # Get order items
-            items_result = self.supabase.table('order_items').select('*').eq('order_id', order_id).execute()
+            # Get order items with product details
+            items_result = self.supabase.table('order_items').select('''
+                quantity, unit_price,
+                products!inner(sku, name)
+            ''').eq('order_id', order_id).execute()
             
             return {
                 'success': True,
-                'order_id': order['order_id'],
+                'order_id': order['id'],
                 'status': order['status'],
-                'customer_email': order['customer_email'],
-                'customer_name': order['customer_name'],
+                'customer_email': order['users']['email'],
+                'customer_name': order['users']['full_name'],
                 'total_amount': order['total_amount'],
-                'currency': order['currency'],
+                'order_date': order['order_date'],
+                'shipping_address': order['shipping_address'],
+                'billing_address': order['billing_address'],
+                'payment_method': order['payment_method'],
                 'created_at': order['created_at'],
                 'updated_at': order['updated_at'],
-                'items': items_result.data or [],
+                'items': [
+                    {
+                        'sku': item['products']['sku'],
+                        'product_name': item['products']['name'],
+                        'quantity': item['quantity'],
+                        'unit_price': item['unit_price'],
+                        'line_total': item['quantity'] * item['unit_price']
+                    }
+                    for item in items_result.data
+                ],
                 'items_count': len(items_result.data or [])
             }
             
         except Exception as e:
+            self.logger.error(f"Error getting order status: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
@@ -182,7 +214,7 @@ class OrderService:
         
         try:
             # Check if order exists
-            order_check = self.supabase.table('orders').select('status').eq('order_id', order_id).execute()
+            order_check = self.supabase.table('orders').select('status').eq('id', order_id).execute()
             
             if not order_check.data:
                 return {
@@ -197,7 +229,7 @@ class OrderService:
                 'updated_at': datetime.utcnow().isoformat()
             }
             
-            result = self.supabase.table('orders').update(update_data).eq('order_id', order_id).execute()
+            result = self.supabase.table('orders').update(update_data).eq('id', order_id).execute()
             
             if result.data:
                 return {
@@ -214,6 +246,7 @@ class OrderService:
                 }
                 
         except Exception as e:
+            self.logger.error(f"Error updating order status: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
@@ -232,7 +265,7 @@ class OrderService:
         """
         try:
             # Check current order status
-            order_result = self.supabase.table('orders').select('status').eq('order_id', order_id).execute()
+            order_result = self.supabase.table('orders').select('status').eq('id', order_id).execute()
             
             if not order_result.data:
                 return {
@@ -255,35 +288,32 @@ class OrderService:
             return self.update_order_status(order_id, 'cancelled')
             
         except Exception as e:
+            self.logger.error(f"Error cancelling order: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
                 'message': f"Failed to cancel order: {str(e)}"
             }
     
-    def validate_products(self, items: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def validate_products(self, items: List[Dict]) -> Dict:
         """
-        Validate that products exist and have sufficient stock.
-        
-        Args:
-            items: List of items with 'sku' and 'quantity'
-        
-        Returns:
-            Dict with validation results
+        Validate that all products exist and have sufficient stock
         """
         try:
-            validation_results = []
+            results = []
             all_valid = True
             
             for item in items:
                 sku = item.get('sku')
-                quantity = item.get('quantity', 0)
+                quantity = item.get('quantity', 1)
                 
-                # Check if product exists
-                product_result = self.supabase.table('products').select('*').eq('sku', sku).execute()
+                # Get product details - use 'name' column, not 'product_name'
+                product_response = self.supabase.table('products').select(
+                    'id, sku, name, price'
+                ).eq('sku', sku).execute()
                 
-                if not product_result.data:
-                    validation_results.append({
+                if not product_response.data:
+                    results.append({
                         'sku': sku,
                         'valid': False,
                         'error': 'Product not found'
@@ -291,33 +321,82 @@ class OrderService:
                     all_valid = False
                     continue
                 
-                product = product_result.data[0]
+                product = product_response.data[0]
                 
-                # Check stock availability
-                if product.get('stock_quantity', 0) < quantity:
-                    validation_results.append({
+                # Check inventory
+                inventory_response = self.supabase.table('inventory').select(
+                    'quantity_in_stock'
+                ).eq('product_id', product['id']).execute()
+                
+                if not inventory_response.data:
+                    # If no inventory record, assume unlimited stock for now
+                    stock = 999999
+                else:
+                    stock = inventory_response.data[0]['quantity_in_stock']
+                
+                if stock < quantity:
+                    results.append({
                         'sku': sku,
                         'valid': False,
-                        'error': f"Insufficient stock. Available: {product.get('stock_quantity', 0)}, Requested: {quantity}"
+                        'error': f'Insufficient stock. Available: {stock}, Requested: {quantity}'
                     })
                     all_valid = False
                 else:
-                    validation_results.append({
+                    results.append({
                         'sku': sku,
                         'valid': True,
-                        'product_name': product.get('name'),
-                        'unit_price': product.get('price'),
-                        'available_stock': product.get('stock_quantity', 0)
+                        'product_id': product['id'],  # Add product_id for order_items
+                        'product_name': product['name'],  # Use 'name' from database
+                        'unit_price': float(product['price']),
+                        'available_stock': stock
                     })
             
             return {
                 'all_valid': all_valid,
-                'results': validation_results
+                'results': results
             }
             
         except Exception as e:
+            self.logger.error(f"Error validating products: {str(e)}")
             return {
                 'all_valid': False,
-                'error': str(e),
-                'results': []
+                'error': str(e)
             }
+    
+    def _find_or_create_user(self, email: str, full_name: str) -> Optional[Dict]:
+        """
+        Find existing user by email or create a new one.
+        
+        Args:
+            email: User's email address
+            full_name: User's full name
+        
+        Returns:
+            User record or None if creation fails
+        """
+        try:
+            # Try to find existing user
+            user_response = self.supabase.table('users').select('id, email, full_name').eq('email', email).execute()
+            
+            if user_response.data:
+                return user_response.data[0]
+            
+            # Create new user
+            user_data = {
+                'id': str(uuid.uuid4()),
+                'email': email,
+                'full_name': full_name,
+                'created_at': datetime.utcnow().isoformat(),
+                'updated_at': datetime.utcnow().isoformat()
+            }
+            
+            create_response = self.supabase.table('users').insert(user_data).execute()
+            
+            if create_response.data:
+                return create_response.data[0]
+            else:
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error finding/creating user: {str(e)}")
+            return None

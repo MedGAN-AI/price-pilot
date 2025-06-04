@@ -46,8 +46,35 @@ __all__ = [
     'order_agent_graph',
     'initialize_state',
     'AgentState',
-    'config'
+    'config',
+    'OrderAgent'
 ]
+
+# Create a simple wrapper class for testing
+class OrderAgent:
+    """Simple wrapper for the OrderAgent for easier testing"""
+    
+    def __init__(self):
+        self.graph = order_agent_graph
+    
+    def process_query(self, query: str) -> str:
+        """Process a query using the order agent"""
+        state = initialize_state()
+        state['messages'] = [{"type": "human", "content": query}]
+        
+        result = self.graph.invoke(state)
+        
+        # Extract the final message content
+        if result.get('messages'):
+            final_message = result['messages'][-1]
+            # Handle different message types - AIMessage has .content attribute, not .get()
+            if hasattr(final_message, 'content'):
+                return final_message.content
+            elif isinstance(final_message, dict):
+                return final_message.get('content', 'No response')
+            else:
+                return str(final_message)
+        return 'No response'
 
 # Convenience function for direct invocation
 def run_order_agent(message: str) -> str:

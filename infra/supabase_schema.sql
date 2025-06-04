@@ -136,6 +136,49 @@ CREATE POLICY "Enable write access for authenticated users"
     ON competitor_prices FOR INSERT
     WITH CHECK (auth.role() = 'authenticated');
 
+-- Orders table to store customer orders
+CREATE TABLE IF NOT EXISTS orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    order_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status TEXT NOT NULL,
+    shipping_address TEXT NOT NULL,
+    billing_address TEXT,
+    payment_method TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enable RLS on orders
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for authenticated users"
+    ON orders FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable write access for authenticated users"
+    ON orders FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update access for authenticated users"
+    ON orders FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- Order items table to store line items
+CREATE TABLE IF NOT EXISTS order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    product_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enable RLS on order_items
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable read access for authenticated users"
+    ON order_items FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable write access for authenticated users"
+    ON order_items FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Enable update access for authenticated users"
+    ON order_items FOR UPDATE USING (auth.role() = 'authenticated');
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_sales_product_id ON sales(product_id);
@@ -143,6 +186,8 @@ CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date);
 CREATE INDEX IF NOT EXISTS idx_price_recommendations_product_id ON price_recommendations(product_id);
 CREATE INDEX IF NOT EXISTS idx_price_changes_product_id ON price_changes(product_id);
 CREATE INDEX IF NOT EXISTS idx_competitor_prices_product_id ON competitor_prices(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 
 -- Create a view for the latest competitor prices
 CREATE OR REPLACE VIEW latest_competitor_prices AS

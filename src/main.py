@@ -6,45 +6,53 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage
-from src.graphs.chat_graph import build_chat_graph
+
+# === Uncomment the desired graph import and builder ===
+
+# --- For Shopping Assistant ---
+# from src.graphs.chat_graph import build_chat_graph as build_graph
+# GRAPH_NAME = "Shopping Assistant Chat"
+
+# --- For Inventory Agent ---
+from src.graphs.invetory_graph import build_inventory_graph as build_graph
+GRAPH_NAME = "Inventory Agent Chat"
 
 def main():
-    # 1) Load environment variables from .env (must contain GOOGLE_API_KEY=...)
+    # 1) Load environment variables from .env
     load_dotenv()
 
-    # 2) Build the ChatAgent StateGraph
-    chat_graph = build_chat_graph()
+    # 2) Build the appropriate StateGraph
+    graph = build_graph()
 
     # 3) Initialize graph state
     state = {
         "messages": [],           # list of AnyMessage (HumanMessage/AIMessage)
-        "intermediate_steps": []  # used internally to decide if a tool node should run
+        "intermediate_steps": []  # used by LangGraph to decide if a tool node should run
     }
 
-    print("=== Shopping Assistant Chat ===")
+    print(f"=== {GRAPH_NAME} ===")
     print("(Type 'exit' or 'quit' to end.)")
 
     while True:
-        user_input = input("You: ")
-        if user_input.strip().lower() in ("exit", "quit"):
+        user_input = input("You: ").strip()
+        if user_input.lower() in ("exit", "quit"):
             print("Goodbye!")
             break
 
-        # 4a) Wrap the user input as a HumanMessage and append
+        # 4a) Wrap user input as HumanMessage and append
         state["messages"].append(HumanMessage(content=user_input))
 
-        # 4b) Invoke the graph once (runs: assistant → maybe tools → assistant …)
-        result = chat_graph.invoke(state)
+        # 4b) Invoke the graph
+        result = graph.invoke(state)
 
-        # 4c) Extract the last message (should be an AIMessage)
+        # 4c) Extract and print last AIMessage
         ai_msg = result["messages"][-1]
         if isinstance(ai_msg, AIMessage):
             print("Bot:", ai_msg.content)
         else:
-            # Fallback if something unexpected was returned
             print("Bot (unexpected msg type):", ai_msg)
 
-        # 4d) Update state for next iteration (carries forward chat history & any intermediate steps)
+        # 4d) Update state
         state = result
 
 if __name__ == "__main__":

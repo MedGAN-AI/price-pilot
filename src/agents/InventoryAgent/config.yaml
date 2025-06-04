@@ -1,10 +1,13 @@
 # File: src/agents/InventoryAgent/config.yaml
 
-# Minimum quantity at which a product is considered "low stock"
-low_stock_threshold: 10
+# 1) LLM settings
+llm:
+  provider: "google-genai"       # or "openai" if you switch providers later
+  model: "gemini-2.0-flash"
+  temperature: 0.0
 
-# Maximum number of items to display when returning a list of low‐stock SKUs
-max_low_stock_items: 5
+# 2) Use Supabase or in-memory fallback
+use_supabase: false
 
-# Whether to enable verbose logging for inventory checks
-verbose: true
+# 3) SKU regex (optional; defaulting to uppercase + digits + dashes)
+sku_pattern: "^[A-Z0-9\\-]{5,}$"

@@ -1,4 +1,4 @@
-import os
+'''import os
 import sys
 
 # Add the project root directory to sys.path
@@ -35,6 +35,59 @@ def main():
 
         # 4b) Invoke the graph once (runs: assistant → maybe tools → assistant …)
         result = chat_graph.invoke(state)
+
+        # 4c) Extract the last message (should be an AIMessage)
+        ai_msg = result["messages"][-1]
+        if isinstance(ai_msg, AIMessage):
+            print("Bot:", ai_msg.content)
+        else:
+            # Fallback if something unexpected was returned
+            print("Bot (unexpected msg type):", ai_msg)
+
+        # 4d) Update state for next iteration (carries forward chat history & any intermediate steps)
+        state = result
+
+if __name__ == "__main__":
+    main()
+'''
+
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, AIMessage
+from src.graphs.invetory_graph import build_inventory_graph
+
+
+def main():
+    # 1) Load environment variables from .env (if using Gemini/Supabase)
+    load_dotenv()
+
+    # 2) Build the InventoryAgent StateGraph
+    inventory_graph = build_inventory_graph()
+
+    # 3) Initialize graph state
+    state = {
+        "messages": [],           # list of AnyMessage (HumanMessage/AIMessage)
+        "intermediate_steps": []  # used by LangGraph to decide if a tool node should run
+    }
+
+    print("=== Inventory Agent Chat ===")
+    print("(Type 'exit' or 'quit' to end.)")
+
+    while True:
+        user_input = input("You: ").strip()
+        if user_input.lower() in ("exit", "quit"):
+            print("Goodbye!")
+            break
+
+        # 4a) Wrap the user input as a HumanMessage and append
+        state["messages"].append(HumanMessage(content=user_input))
+
+        # 4b) Invoke the graph once (runs: assistant → possibly tools → assistant, etc.)
+        result = inventory_graph.invoke(state)
 
         # 4c) Extract the last message (should be an AIMessage)
         ai_msg = result["messages"][-1]

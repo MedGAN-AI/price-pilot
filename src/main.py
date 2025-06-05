@@ -11,18 +11,22 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # --- For Shopping Assistant ---
 # from src.graphs.chat_graph import build_chat_graph as build_graph
-# GRAPH_NAME = "Shopping Assistant Chat
+# GRAPH_NAME = "Shopping Assistant Chat"
 
 # --- For Inventory Agent ---
-from src.graphs.inventory_graph import build_inventory_graph as build_graph
-GRAPH_NAME = "Inventory Agent Chat"
+# from src.graphs.inventory_graph import build_inventory_graph as build_graph
+# GRAPH_NAME = "Inventory Agent Chat"
+
+# --- For Recommend Agent ---
+from src.agents.RecommendAgent.agent import recommend_assistant as build_graph
+GRAPH_NAME = "Recommend Agent Chat"
 
 def main():
     # 1) Load environment variables from .env
     load_dotenv()
 
     # 2) Build the appropriate StateGraph
-    graph = build_graph()
+    graph = build_graph
 
     # 3) Initialize graph state
     state = {

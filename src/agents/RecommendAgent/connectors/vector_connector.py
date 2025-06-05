@@ -42,8 +42,7 @@ def embed_query(text: str) -> List[float]:
         # Get embeddings from Gemini
         result = client.models.embed_content(
             model=EMBEDDING_MODEL,
-            contents=text,
-            task_type="retrieval_query"
+            contents=text
         )
         
         # Extract the embedding values

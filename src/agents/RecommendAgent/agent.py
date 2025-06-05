@@ -44,25 +44,27 @@ llm = ChatGoogleGenerativeAI(
     api_key=GOOGLE_API_KEY
 )
 
-tools = [
-    recommend_tool,        # RecommendProducts
-    Tool(
-        name="Final Answer",
-        func=lambda x: x,
-        description="Use this tool to provide a final text reply without further actions."
-    )
-]
+# Tools setup - remove the Final Answer tool as ReAct handles this automatically
+tools = [recommend_tool]
 
 # Load prompt
 PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "recommend_prompt.txt")
 with open(PROMPT_PATH, "r", encoding="utf-8") as f:
     system_prompt = f.read()
 
-prompt = PromptTemplate.from_template(system_prompt)
+# Create proper ReAct prompt template
+react_prompt = PromptTemplate.from_template(
+    system_prompt + "\n\nQuestion: {input}\n{agent_scratchpad}"
+)
 
-# Create ReAct agent + AgentExecutor
-agent = create_react_agent(llm, tools, prompt)
+# Create ReAct agent
+agent = create_react_agent(
+    llm=llm, 
+    tools=tools, 
+    prompt=react_prompt
+)
 
+# Create AgentExecutor
 agent_executor = AgentExecutor.from_agent_and_tools(
     agent=agent,
     tools=tools,
@@ -84,7 +86,7 @@ def assistant(state: AgentState) -> Dict[str, Any]:
     try:
         user_message = state["messages"][-1].content
 
-        # Invoke the ReAct agent (will pick RecommendProducts or Final Answer)
+        # Invoke the ReAct agent
         result = agent_executor.invoke({"input": user_message})
 
         content = result["output"]
@@ -99,7 +101,7 @@ def assistant(state: AgentState) -> Dict[str, Any]:
         err = f"Sorry, I encountered an error: {str(e)}"
         return {"messages": [AIMessage(content=err)], "intermediate_steps": []}
 
-# 6) Build and compile LangGraph
+# Build and compile LangGraph
 builder = StateGraph(AgentState)
 builder.add_node("assistant", assistant)
 builder.add_edge(START, "assistant")
@@ -107,7 +109,7 @@ builder.add_edge("assistant", END)
 
 recommend_assistant = builder.compile()
 
-# 7) Standalone test
+# Standalone test
 if __name__ == "__main__":
     from langchain_core.messages import HumanMessage
 

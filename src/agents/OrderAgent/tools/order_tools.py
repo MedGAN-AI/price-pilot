@@ -121,22 +121,15 @@ def create_order_tool_func(*args, **kwargs) -> str:
                 "message": "Some products are invalid or out of stock",
                 "invalid_items": invalid_items
             })
-        
-        # Enrich items with product details
-        enriched_items = []
-        for item in items_list:
-            # Find validation result for this SKU
-            validation_item = next(r for r in validation_result['results'] if r['sku'] == item['sku'])
-            enriched_items.append({
-                'sku': item['sku'],
-                'product_id': validation_item['product_id'],  # Add missing product_id
-                'product_name': validation_item['product_name'],
-                'quantity': item['quantity'],
-                'unit_price': validation_item['unit_price']
-            })
-        
-        # Create the order
-        result = order_service.create_order(customer_email, customer_name, enriched_items)
+          # Create the order directly with items_list - the service will handle validation internally
+        result = order_service.create_order(
+            customer_email=customer_email,
+            customer_name=customer_name,
+            items=items_list,
+            shipping_address="TBD - Address collection needed",
+            billing_address="TBD - Address collection needed", 
+            payment_method="credit_card"
+        )
         return json.dumps(result, indent=2)
         
     except json.JSONDecodeError:

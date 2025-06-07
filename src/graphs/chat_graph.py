@@ -1,4 +1,4 @@
-from src.agents.ChatAgent.llm_agent import shopping_assistant
+from src.agents.ChatAgent.agent import shopping_assistant
 
 def build_chat_graph():
     """

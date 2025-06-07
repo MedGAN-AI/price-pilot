@@ -71,24 +71,25 @@ if __name__ == "__main__":
 
 
 
-'''import os
+'''
+
+import os
 import sys
 
-# Insert project src/ on path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Ensure 'src' is on sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, AIMessage
 
-# Import orchestrator
 from src.graphs.orchestrator import orchestrator, initialize_state
 
 def main():
     load_dotenv()
     state = initialize_state()
 
-    print("=== Multi-Agent Assistant ===")
-    print("(Type 'exit' to quit.)")
+    print("=== Multi-Agent Orchestrator ===")
+    print("(Type 'exit' or 'quit' to end.)")
 
     while True:
         user_input = input("You: ").strip()
@@ -96,20 +97,20 @@ def main():
             print("Goodbye!")
             break
 
-        # Append human message
+        # Add user message
         state["messages"].append(HumanMessage(content=user_input))
 
-        # Invoke the orchestrator graph
+        # Run orchestrator
         result = orchestrator.invoke(state)
 
-        # Extract and print bot reply
+        # Print the bot’s reply
         ai_msg = result["messages"][-1]
         if isinstance(ai_msg, AIMessage):
             print("Bot:", ai_msg.content)
         else:
             print("Bot (unexpected):", ai_msg)
 
-        # Reset intermediate steps and carry messages forward
+        # Prepare next state
         state = {
             "messages": result["messages"],
             "intermediate_steps": [],
@@ -118,4 +119,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 '''

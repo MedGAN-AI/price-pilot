@@ -9,21 +9,25 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # === Uncomment the desired graph import and builder ===
 
-# --- For Shopping Assistant ---
+# --- Shopping Assistant ---
 from src.graphs.chat_graph import build_chat_graph as build_graph
 GRAPH_NAME = "Shopping Assistant Chat"
 
-# --- For Inventory Agent ---
+# --- Inventory Agent ---
 # from src.graphs.inventory_graph import build_inventory_graph as build_graph
 # GRAPH_NAME = "Inventory Agent Chat"
 
-# --- 4) Forecast Agent ---
+# --- Forecast Agent ---
 # from src.graphs.forecast_graph import build_forecast_graph as build_graph
 # GRAPH_NAME = "Forecast Agent Chat"
 
-# --- 5) Order Agent ---
+# --- Order Agent ---
 # from src.graphs.order_graph import build_order_graph as build_graph
 # GRAPH_NAME = "Order Agent Chat"
+
+# --- Logistics Agent ---
+# from src.graphs.logistics_graph import build_logistics_graph as build_graph
+# GRAPH_NAME = "Logistics Agent Chat"
 
 def main():
     # 1) Load environment variables from .env

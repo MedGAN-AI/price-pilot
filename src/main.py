@@ -11,22 +11,26 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 # --- For Shopping Assistant ---
 # from src.graphs.chat_graph import build_chat_graph as build_graph
-# GRAPH_NAME = "Shopping Assistant Chat"
+# GRAPH_NAME = "Shopping Assistant Chat
 
 # --- For Inventory Agent ---
 # from src.graphs.inventory_graph import build_inventory_graph as build_graph
 # GRAPH_NAME = "Inventory Agent Chat"
 
-# --- For Recommend Agent ---
-from src.agents.RecommendAgent.agent import recommend_assistant as build_graph
-GRAPH_NAME = "Recommend Agent Chat"
+# --- 4) Forecast Agent ---
+from src.graphs.forecast_graph import build_forecast_graph as build_graph
+GRAPH_NAME = "Forecast Agent Chat"
+
+# --- 5) Order Agent ---
+# from src.graphs.order_graph import build_order_graph as build_graph
+# GRAPH_NAME = "Order Agent Chat"
 
 def main():
     # 1) Load environment variables from .env
     load_dotenv()
 
     # 2) Build the appropriate StateGraph
-    graph = build_graph
+    graph = build_graph()
 
     # 3) Initialize graph state
     state = {
@@ -61,3 +65,57 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+'''import os
+import sys
+
+# Insert project src/ on path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, AIMessage
+
+# Import orchestrator
+from src.graphs.orchestrator import orchestrator, initialize_state
+
+def main():
+    load_dotenv()
+    state = initialize_state()
+
+    print("=== Multi-Agent Assistant ===")
+    print("(Type 'exit' to quit.)")
+
+    while True:
+        user_input = input("You: ").strip()
+        if user_input.lower() in ("exit", "quit"):
+            print("Goodbye!")
+            break
+
+        # Append human message
+        state["messages"].append(HumanMessage(content=user_input))
+
+        # Invoke the orchestrator graph
+        result = orchestrator.invoke(state)
+
+        # Extract and print bot reply
+        ai_msg = result["messages"][-1]
+        if isinstance(ai_msg, AIMessage):
+            print("Bot:", ai_msg.content)
+        else:
+            print("Bot (unexpected):", ai_msg)
+
+        # Reset intermediate steps and carry messages forward
+        state = {
+            "messages": result["messages"],
+            "intermediate_steps": [],
+            "intent": ""
+        }
+
+if __name__ == "__main__":
+    main()
+'''

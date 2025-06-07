@@ -10,16 +10,16 @@ from langchain_core.messages import HumanMessage, AIMessage
 # === Uncomment the desired graph import and builder ===
 
 # --- For Shopping Assistant ---
-# from src.graphs.chat_graph import build_chat_graph as build_graph
-# GRAPH_NAME = "Shopping Assistant Chat
+from src.graphs.chat_graph import build_chat_graph as build_graph
+GRAPH_NAME = "Shopping Assistant Chat"
 
 # --- For Inventory Agent ---
 # from src.graphs.inventory_graph import build_inventory_graph as build_graph
 # GRAPH_NAME = "Inventory Agent Chat"
 
 # --- 4) Forecast Agent ---
-from src.graphs.forecast_graph import build_forecast_graph as build_graph
-GRAPH_NAME = "Forecast Agent Chat"
+# from src.graphs.forecast_graph import build_forecast_graph as build_graph
+# GRAPH_NAME = "Forecast Agent Chat"
 
 # --- 5) Order Agent ---
 # from src.graphs.order_graph import build_order_graph as build_graph

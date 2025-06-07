@@ -7,7 +7,7 @@ import yaml
 from typing import List
 
 # Import base agent framework
-from ...core.base_agent import build_agent, create_llm_from_config, load_prompt_from_file, AgentState, initialize_state
+from core.base_agent import build_agent, create_llm_from_config, load_prompt_from_file, AgentState, initialize_state
 
 # Import order tools
 from .tools.order_tools import (

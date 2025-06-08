@@ -1,11 +1,10 @@
-# src/core/__init__.py
 """
 Core module for shared agent functionality.
 
 This module provides base classes, utilities, and factories for building
 multi-agent systems with consistent structure and behavior.
 """
-
+'''
 from .base_agent import BaseAgent, AgentState, initialize_state, build_agent
 from .llm_factory import LLMFactory
 from .utils import (
@@ -38,4 +37,4 @@ __all__ = [
 
 # Version information
 __version__ = "1.0.0"
-__author__ = "Price Pilot Team"
+__author__ = "Price Pilot Team"'''

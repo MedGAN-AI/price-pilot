@@ -1,3 +1,7 @@
+''' 
+    this is this is basic orchestrator for testing purposes 
+    we will implement a more sophisticated one later 
+'''
 import os
 from typing import Any, Dict, TypedDict, Annotated, List
 
@@ -10,9 +14,8 @@ from src.agents.ChatAgent.agent import shopping_assistant
 from src.agents.InventoryAgent.agent import inventory_assistant
 from src.agents.RecommendAgent.agent import recommend_assistant
 from src.agents.ForecastAgent.agent import forecast_assistant
+from src.agents.LogisticsAgent.agent import logistics_assistant
 from src.agents.OrderAgent.agent import order_agent_graph
-# Commenting out the logistics agent
-# from src.agents.LogisticsAgent.agent import logistics_assistant
 
 def detect_intent(text: str) -> str:
     """
@@ -75,9 +78,8 @@ def dispatch(state: OrchestrationState) -> OrchestrationState:
         subgraph = forecast_assistant
     elif intent == "order":
         subgraph = order_agent_graph
-    # Commented out logistics handling
-    # elif intent == "logistics":
-    #     subgraph = logistics_assistant
+    elif intent == "logistics":
+        subgraph = logistics_assistant
     else:
         subgraph = shopping_assistant
 

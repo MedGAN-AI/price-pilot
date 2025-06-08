@@ -73,6 +73,16 @@ def main():
 if __name__ == "__main__":
     main()'''
 
+'''
+to test:
+chat agent: Hello, how’s your day?
+forecast agent: What is the forecast for next week?
+recommend agent: Recommend me some red running shoes.
+inventory agent: How many units of SHOES-RED-001 do we have in stock?
+order agent: Can you place an order for 10 units of SHOES-RED-001?
+logistics agent: 
+
+'''
 
 import os
 import sys

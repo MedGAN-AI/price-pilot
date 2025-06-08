@@ -6,7 +6,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage
 
 # Import each agent’s compiled StateGraph
-from src.agents.ChatAgent.llm_agent import shopping_assistant
+from src.agents.ChatAgent.agent import shopping_assistant
 from src.agents.InventoryAgent.agent import inventory_assistant
 from src.agents.RecommendAgent.agent import recommend_assistant
 from src.agents.ForecastAgent.agent import forecast_assistant

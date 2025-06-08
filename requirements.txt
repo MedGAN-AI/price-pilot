@@ -23,6 +23,7 @@ langchain_community
 langchain_huggingface
 langchain_google_genai
 langchain_core
+sentry-sdk
 statsmodels
 pydantic[email]
 

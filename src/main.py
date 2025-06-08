@@ -1,4 +1,7 @@
-'''import os
+'''
+this code to test our agents and graphs in a single script.
+
+import os
 import sys
 
 # Add the project root directory to sys.path

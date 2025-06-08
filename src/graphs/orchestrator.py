@@ -5,13 +5,14 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage
 
-# Import each agent’s compiled StateGraph
+# Import each agent's compiled StateGraph
 from src.agents.ChatAgent.agent import shopping_assistant
 from src.agents.InventoryAgent.agent import inventory_assistant
 from src.agents.RecommendAgent.agent import recommend_assistant
 from src.agents.ForecastAgent.agent import forecast_assistant
-from src.agents.OrderAgent.agent import order_assistant
-from src.agents.LogisticsAgent.agent import logistics_assistant
+from src.agents.OrderAgent.agent import order_agent_graph
+# Commenting out the logistics agent
+# from src.agents.LogisticsAgent.agent import logistics_assistant
 
 def detect_intent(text: str) -> str:
     """
@@ -31,9 +32,10 @@ def detect_intent(text: str) -> str:
     # Order keywords
     if any(k in lower for k in ["order", "purchase", "buy", "place order"]):
         return "order"
-    # Logistics / shipping keywords
+    # Logistics / shipping keywords - redirect to chat since logistics agent is disabled
     if any(k in lower for k in ["ship", "delivery", "tracking", "arrive", "status"]):
-        return "logistics"
+        # return "logistics"  # Commented out
+        return "chat"  # Redirect to chat
     # Default to chat
     return "chat"
 
@@ -72,9 +74,10 @@ def dispatch(state: OrchestrationState) -> OrchestrationState:
     elif intent == "forecast":
         subgraph = forecast_assistant
     elif intent == "order":
-        subgraph = order_assistant
-    elif intent == "logistics":
-        subgraph = logistics_assistant
+        subgraph = order_agent_graph
+    # Commented out logistics handling
+    # elif intent == "logistics":
+    #     subgraph = logistics_assistant
     else:
         subgraph = shopping_assistant
 

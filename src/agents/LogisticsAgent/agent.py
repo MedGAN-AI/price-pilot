@@ -19,7 +19,7 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 
 # Import logistics tools - Fixed import
-from tools.logistics_tools import create_logistics_tools
+from .tools.logistics_tools import create_logistics_tools
 
 load_dotenv()
 

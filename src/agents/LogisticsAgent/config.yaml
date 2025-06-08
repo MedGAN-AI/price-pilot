@@ -1,13 +1,32 @@
 # Logistics Agent Configuration
 # This file contains all configuration settings for the logistics management system
 
+# LLM Configuration
 llm:
-  provider: "ollama"
-  model: "llama3.2:1b"
-  temperature: 0.1
-  base_url: "http://localhost:11434"
-# Logistics Configuration
-
+  provider: "google"                    # Changed from "ollama" to "google"
+  model: "gemini-1.5-flash"            # Gemini 1.5 Flash model
+  temperature: 0.1                     # Low temperature for consistent responses
+  max_output_tokens: 1024              # Maximum response length
+  top_p: 0.9                          # Nucleus sampling parameter
+  top_k: 40                           # Top-k sampling parameter
+  
+  # Gemini-specific safety settings (using numeric values)
+  # Values: 0=BLOCK_NONE, 1=BLOCK_ONLY_HIGH, 2=BLOCK_MEDIUM, 3=BLOCK_LOW
+  safety_settings:
+    derogatory: 1                      # HARM_CATEGORY_DEROGATORY: BLOCK_ONLY_HIGH
+    toxicity: 1                        # HARM_CATEGORY_TOXICITY: BLOCK_ONLY_HIGH
+    violence: 1                        # HARM_CATEGORY_VIOLENCE: BLOCK_ONLY_HIGH
+    sexual: 1                          # HARM_CATEGORY_SEXUAL: BLOCK_ONLY_HIGH
+    medical: 1                         # HARM_CATEGORY_MEDICAL: BLOCK_ONLY_HIGH
+    dangerous: 1                       # HARM_CATEGORY_DANGEROUS: BLOCK_ONLY_HIGH
+    harassment: 1                      # HARM_CATEGORY_HARASSMENT: BLOCK_ONLY_HIGH
+    hate_speech: 1                     # HARM_CATEGORY_HATE_SPEECH: BLOCK_ONLY_HIGH
+    sexually_explicit: 1               # HARM_CATEGORY_SEXUALLY_EXPLICIT: BLOCK_ONLY_HIGH
+  
+  # API configuration
+  timeout: 30                          # Request timeout in seconds
+  retry_attempts: 3                    # Number of retry attempts
+  retry_delay: 1             
 
 logistics:
   # Delay threshold in hours - shipments delayed beyond this are flagged

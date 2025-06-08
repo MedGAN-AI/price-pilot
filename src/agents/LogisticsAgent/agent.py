@@ -12,7 +12,7 @@ from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
 from langchain_core.tools import Tool
-from langchain_community.llms import Ollama
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 # LangGraph imports
 from langgraph.graph import START, END, StateGraph
@@ -27,11 +27,11 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
-# LLM configuration - Updated for Ollama
-llm_provider = config.get("llm", {}).get("provider", "ollama")
-llm_model = config.get("llm", {}).get("model", "llama3.2:1b")
+# LLM configuration - Updated for Gemini
+llm_provider = config.get("llm", {}).get("provider", "google")
+llm_model = config.get("llm", {}).get("model", "gemini-1.5-flash")
 llm_temperature = config.get("llm", {}).get("temperature", 0.1)
-ollama_base_url = config.get("llm", {}).get("base_url", "http://localhost:11434")
+google_api_key = os.getenv("GOOGLE_API_KEY")
 
 # Logistics configuration
 delay_threshold_hours = config.get("logistics", {}).get("delay_threshold_hours", 4)
@@ -41,35 +41,47 @@ preferred_carriers = config.get("logistics", {}).get("preferred_carriers", ["ara
 tracking_pattern_str = config.get("tracking_pattern", "^[A-Z0-9]{8,20}$")
 TRACKING_PATTERN = re.compile(tracking_pattern_str)
 
-# Initialize Ollama LLM - FIXED: Removed duplicate stop tokens
-print(f"🦙 Initializing Llama 3.2:1b via Ollama...")
+# Initialize Gemini 1.5 Flash LLM
+print(f"🤖 Initializing Gemini 1.5 Flash...")
 try:
-    llm = Ollama(
+    if not google_api_key:
+        raise ValueError("GOOGLE_API_KEY environment variable is required")
+    
+    llm = ChatGoogleGenerativeAI(
         model=llm_model,
         temperature=llm_temperature,
-        base_url=ollama_base_url,
-        num_predict=512,  # Limit response length for better performance
-        num_ctx=4096,  # Context window
-        repeat_penalty=1.1,
+        google_api_key=google_api_key,
+        max_output_tokens=1024,
+        top_p=0.9,
         top_k=40,
-        top_p=0.9
-        # REMOVED: stop parameter from here to avoid conflict
+        # Safety settings for production use (using numeric values)
+        safety_settings={
+            1: 1,  # HARM_CATEGORY_DEROGATORY: BLOCK_ONLY_HIGH
+            2: 1,  # HARM_CATEGORY_TOXICITY: BLOCK_ONLY_HIGH  
+            3: 1,  # HARM_CATEGORY_VIOLENCE: BLOCK_ONLY_HIGH
+            4: 1,  # HARM_CATEGORY_SEXUAL: BLOCK_ONLY_HIGH
+            7: 1,  # HARM_CATEGORY_MEDICAL: BLOCK_ONLY_HIGH
+            8: 1,  # HARM_CATEGORY_DANGEROUS: BLOCK_ONLY_HIGH
+            9: 1,  # HARM_CATEGORY_HARASSMENT: BLOCK_ONLY_HIGH
+            10: 1, # HARM_CATEGORY_HATE_SPEECH: BLOCK_ONLY_HIGH
+            11: 1, # HARM_CATEGORY_SEXUALLY_EXPLICIT: BLOCK_ONLY_HIGH
+        }
     )
     
     # Test connection
     test_response = llm.invoke("Hello")
-    print(f"✅ Ollama connection successful: {test_response[:50]}...")
+    print(f"✅ Gemini connection successful: {test_response.content[:50]}...")
     
 except Exception as e:
-    print(f"❌ Ollama connection failed: {e}")
-    print("Make sure Ollama is running: ollama serve")
-    print("And model is pulled: ollama pull llama3.2:1b")
+    print(f"❌ Gemini connection failed: {e}")
+    print("Make sure GOOGLE_API_KEY is set in your .env file")
+    print("Get your API key from: https://aistudio.google.com/app/apikey")
     raise
 
 # Create tools using the factory function
 tools = create_logistics_tools()
 
-# Llama 3.2 optimized system prompt - FIXED: Cleaner format
+# Gemini 1.5 Flash optimized system prompt
 SYSTEM_PROMPT = """You are LogisticsAgent, a specialized assistant for Aramex and Naqel logistics operations.
 
 Available tools:
@@ -88,6 +100,8 @@ Guidelines:
 3. Escalate delays over {delay_threshold_hours} hours
 4. Suggest alternatives when needed
 5. Use JSON format for tool inputs
+6. Be concise and professional in responses
+7. Format responses with clear structure and emojis
 
 Current context: {shipment_context}
 
@@ -108,10 +122,10 @@ else:
 
 prompt = PromptTemplate.from_template(system_prompt)
 
-# Create agent with Llama 3.2
+# Create agent with Gemini
 agent = create_react_agent(llm, tools, prompt)
 
-# FIXED: Updated AgentExecutor configuration
+# Updated AgentExecutor configuration for Gemini
 agent_executor = AgentExecutor.from_agent_and_tools(
     agent=agent,
     tools=tools,
@@ -120,8 +134,8 @@ agent_executor = AgentExecutor.from_agent_and_tools(
     max_iterations=5,
     return_intermediate_steps=True,
     early_stopping_method="generate",
-    # ADDED: Configure stop sequences here instead of in LLM
-    stop_sequence=["Human:", "Assistant:", "User:", "Observation:"]
+    # Gemini-specific configuration
+    max_execution_time=30  # 30 seconds timeout
 )
 
 class AgentState(TypedDict):
@@ -263,10 +277,10 @@ def assistant(state: AgentState) -> Dict[str, Any]:
         if tracking_numbers:
             current_context["extracted_tracking"] = tracking_numbers
 
-        # Prepare agent input - FIXED: Cleaner input format
+        # Prepare agent input - Optimized for Gemini
         agent_input = {
             "input": user_message,
-            "shipment_context": json.dumps(current_context),
+            "shipment_context": json.dumps(current_context, ensure_ascii=False),
             "delay_threshold_hours": delay_threshold_hours,
             "preferred_carriers": preferred_carriers
         }
@@ -278,7 +292,7 @@ def assistant(state: AgentState) -> Dict[str, Any]:
             # Fallback response if agent fails
             print(f"Agent execution error: {agent_error}")
             return {
-                "messages": [AIMessage(content=f"I encountered an issue processing your request. Please try rephrasing your query.")],
+                "messages": [AIMessage(content=f"I encountered an issue processing your request. Please try rephrasing your query or contact support.")],
                 "intermediate_steps": [],
                 "shipment_context": current_context,
                 "user_preferences": state.get("user_preferences", {}),
@@ -420,7 +434,7 @@ def get_agent_status() -> Dict[str, Any]:
     return {
         "status": "active",
         "model": llm_model,
-        "provider": "ollama",
+        "provider": "google",
         "supported_carriers": preferred_carriers,
         "delay_threshold_hours": delay_threshold_hours,
         "available_tools": [tool.name for tool in tools],
@@ -453,7 +467,7 @@ def process_batch_requests(requests: List[Dict]) -> List[Dict]:
     return results
 
 if __name__ == "__main__":
-    print("=== LogisticsAgent with Llama 3.2:1b Test Suite ===")
+    print("=== LogisticsAgent with Gemini 1.5 Flash Test Suite ===")
     
     # Test 1: Agent Executor
     print("\n1. Testing AgentExecutor...")

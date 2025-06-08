@@ -23,6 +23,8 @@ langchain_community
 langchain_huggingface
 langchain_google_genai
 langchain_core
+statsmodels
+pydantic[email]
 
 
 #pytorch gpu version -> pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124

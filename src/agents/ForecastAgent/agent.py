@@ -17,7 +17,7 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 
 # Import the forecasting tool
-from tools.forecast_tools import forecast_with_arima_tool
+from .tools.forecast_tools import forecast_with_arima_tool
 
 load_dotenv()
 
@@ -48,16 +48,8 @@ tools = [
 ]
 
 # Create a simple prompt template that works better with Gemini
-system_message = """You are a ForecastAgent, an AI assistant specialized in generating forecasts and predictions based on data analysis.
-
-Your role is to help users predict future sales, demand, trends, and other time-series data using appropriate forecasting methods.
-
-When a user asks for a forecast:
-1. Analyze their request to understand what they want to forecast
-2. Use the appropriate forecasting tool to generate predictions
-3. Provide clear, actionable insights based on the results
-
-Always respond in a helpful and professional manner."""
+with open(os.path.join(os.path.dirname(__file__), "prompts/forecast_prompt.txt"), "r", encoding="utf-8") as f:
+    system_message = f.read().strip()
 
 # Use ChatPromptTemplate instead of PromptTemplate for better Gemini compatibility
 prompt = ChatPromptTemplate.from_messages([
@@ -128,7 +120,7 @@ builder = StateGraph(AgentState)
 builder.add_node("assistant", assistant)
 builder.add_edge(START, "assistant")
 builder.add_edge("assistant", END)
-forecast_agent = builder.compile()
+forecast_assistant = builder.compile()
 
 if __name__ == "__main__":
     from langchain_core.messages import HumanMessage
@@ -149,7 +141,7 @@ if __name__ == "__main__":
             HumanMessage(content="What is the forecast for next week?")
         ]
         state["intermediate_steps"] = []
-        response_state = forecast_agent.invoke(state)
+        response_state = forecast_assistant.invoke(state)
         print("LangGraph response:\n", response_state["messages"][-1].content)
     except Exception as e:
         print(f"LangGraph test failed: {e}")

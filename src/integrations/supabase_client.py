@@ -1,5 +1,3 @@
-# File: src/integrations/supabase_client.py
-
 from supabase import create_client, Client
 import os
 from dotenv import load_dotenv

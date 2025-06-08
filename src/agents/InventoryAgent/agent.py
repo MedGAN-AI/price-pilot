@@ -1,9 +1,13 @@
 import os
 import re
+import sys
 import yaml
 from typing import Any, Dict, TypedDict, Annotated, List
 
 from dotenv import load_dotenv
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+sys.path.insert(0, project_root)
 
 # LangChain imports
 from langchain.agents import AgentExecutor, create_react_agent

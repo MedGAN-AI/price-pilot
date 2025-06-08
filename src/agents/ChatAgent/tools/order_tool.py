@@ -1,19 +1,3 @@
-'''from langchain_core.tools import Tool
-
-def _check_order_status(order_id: str) -> str:
-    """
-    Stub implementation. In a real system, you’d call your order database or API.
-    """
-    return f"Order {order_id} is currently being processed and should ship soon."
-
-order_tool = Tool(
-    name="OrderTool",
-    func=_check_order_status,
-    description="Gets the status of a customer order. Input: an order ID string."
-)'''
-
-# this function for the status we can do other for the ordering
-
 from langchain_core.tools import Tool
 import json
 import uuid
@@ -125,31 +109,6 @@ def _check_order_status(order_id: str) -> str:
     except Exception as e:
         return f"Sorry, I encountered an error while checking your order: {str(e)}. Please try again with a valid order ID."
 
-def _place_simple_order(order_request: str) -> str:
-    """
-    Place a simple order. For demo purposes, this creates a basic order.
-    In production, this would integrate with your full order processing system.    """
-    try:
-        from integrations.supabase_client import supabase
-        
-        if not supabase:
-            return "Sorry, the ordering system is currently unavailable. Please try again later."
-        
-        # For now, return a helpful message about order placement
-        # In a real system, you'd parse the order_request and create the order
-        return (
-            "To place an order, I'll need the following information:\n"
-            "• Your email address\n"
-            "• Product SKUs and quantities you want to order\n"
-            "• Shipping address\n"
-            "• Payment method preference\n\n"
-            "Please provide these details and I'll help you place your order. "
-            "You can also browse our products first by asking me to search for items you're interested in."
-        )
-        
-    except Exception as e:
-        return f"Sorry, I encountered an error with the ordering system: {str(e)}. Please try again later."
-
 # Create the main order tool
 order_tool = Tool(
     name="OrderTool",
@@ -161,16 +120,6 @@ order_tool = Tool(
     )
 )
 
-# Additional tool for order placement (you can add this to your tools list if needed)
-place_order_tool = Tool(
-    name="PlaceOrderTool", 
-    func=_place_simple_order,
-    description=(
-        "Help customers place new orders. "
-        "Input: order request information. "
-        "Output: Order placement guidance or confirmation."
-    )
-)
 
 # Comprehensive order tool that handles multiple operations 
 '''

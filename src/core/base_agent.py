@@ -32,16 +32,16 @@ def build_agent(llm, tools, prompt_template: PromptTemplate, max_iterations: int
         prompt = PromptTemplate.from_template(prompt_template)
     else:
         prompt = prompt_template    # Create the agent and executor
-    agent = create_react_agent(llm, tools, prompt)
+    agent = create_react_agent(llm, tools, prompt)   
     executor = AgentExecutor.from_agent_and_tools(
         agent=agent,
         tools=tools,
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=3,  # Reduced from 10 to 3 to force faster completion
-        early_stopping_method="generate",  # Stop early if possible
+        max_iterations=max_iterations,
+
         return_intermediate_steps=True
-    )    # Define the assistant node for the StateGraph
+    )
     def assistant(state: AgentState) -> Dict[str, Any]:
         try:
             user_message = state["messages"][-1].content

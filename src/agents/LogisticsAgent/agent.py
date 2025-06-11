@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import json
 
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
 # Add the project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -27,376 +28,284 @@ from langgraph.graph.message import add_messages
 # Import logistics tools - Fixed import
 from tools.logistics_tools import create_logistics_tools
 
-# Try to import display constants, fallback to local definitions if not found
-try:
-    from src.core.display_constants import SUCCESS, ERROR, ROBOT, TRUCK, PACKAGE, SEARCH, CHART, REFRESH, CLOCK, ANALYTICS, CLIPBOARD
-except ImportError:
-    # Fallback definitions if the module is not found
-    SUCCESS = "✅"
-    ERROR = "❌"
-    ROBOT = "🤖"
-    TRUCK = "🚚"
-    PACKAGE = "📦"
-    SEARCH = "🔍"
-    CHART = "📊"
-    REFRESH = "🔄"
-    CLOCK = "⏰"
-    ANALYTICS = "📈"
-    CLIPBOARD = "📋"
-    print("⚠️  Warning: Using fallback display constants. Consider creating src/core/display_constants.py")
+# Display constants
+SUCCESS = "✅"
+ERROR = "❌"
+ROBOT = "🤖"
+TRUCK = "🚚"
+PACKAGE = "📦"
+SEARCH = "🔍"
+CHART = "📊"
+REFRESH = "🔄"
+CLOCK = "⏰"
+ANALYTICS = "📈"
+CLIPBOARD = "📋"
+DATABASE = "🗄️"
 
 load_dotenv()
 
+# Supabase configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+# Initialize Supabase client
+print(f"{DATABASE} Connecting to Supabase...")
+try:
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+        raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required")
+    
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    print(f"{SUCCESS} Supabase connection successful")
+except Exception as e:
+    print(f"{ERROR} Supabase connection failed: {e}")
+    raise
+
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
-with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-    config = yaml.safe_load(f)
+if os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+else:
+    config = {"llm": {"provider": "google", "model": "gemini-1.5-flash", "temperature": 0.1}}
 
-# LLM configuration - Updated for Gemini
-llm_provider = config.get("llm", {}).get("provider", "google")
-llm_model = config.get("llm", {}).get("model", "gemini-1.5-flash")
-llm_temperature = config.get("llm", {}).get("temperature", 0.1)
+# LLM configuration
 google_api_key = os.getenv("GOOGLE_API_KEY")
+llm_model = config.get("llm", {}).get("model", "gemini-1.5-flash")
 
-# Logistics configuration
-delay_threshold_hours = config.get("logistics", {}).get("delay_threshold_hours", 4)
-preferred_carriers = config.get("logistics", {}).get("preferred_carriers", ["aramex", "naqel"])
-
-# Tracking number regex (compile for reuse)
-tracking_pattern_str = config.get("tracking_pattern", "^[A-Z0-9]{8,20}$")
-TRACKING_PATTERN = re.compile(tracking_pattern_str)
-
-# Initialize Gemini 1.5 Flash LLM
-print(f"{ROBOT} Initializing Gemini 1.5 Flash...")
+# Initialize Gemini
+print(f"{ROBOT} Initializing Gemini...")
 try:
     if not google_api_key:
         raise ValueError("GOOGLE_API_KEY environment variable is required")
     
     llm = ChatGoogleGenerativeAI(
         model=llm_model,
-        temperature=llm_temperature,
+        temperature=0.1,
         google_api_key=google_api_key,
-        max_output_tokens=1024,
-        top_p=0.9,
-        top_k=40,
-        # Safety settings for production use (using numeric values)
-        safety_settings={
-            1: 1,  # HARM_CATEGORY_DEROGATORY: BLOCK_ONLY_HIGH
-            2: 1,  # HARM_CATEGORY_TOXICITY: BLOCK_ONLY_HIGH  
-            3: 1,  # HARM_CATEGORY_VIOLENCE: BLOCK_ONLY_HIGH
-            4: 1,  # HARM_CATEGORY_SEXUAL: BLOCK_ONLY_HIGH
-            7: 1,  # HARM_CATEGORY_MEDICAL: BLOCK_ONLY_HIGH
-            8: 1,  # HARM_CATEGORY_DANGEROUS: BLOCK_ONLY_HIGH
-            9: 1,  # HARM_CATEGORY_HARASSMENT: BLOCK_ONLY_HIGH
-            10: 1, # HARM_CATEGORY_HATE_SPEECH: BLOCK_ONLY_HIGH
-            11: 1, # HARM_CATEGORY_SEXUALLY_EXPLICIT: BLOCK_ONLY_HIGH
-        }
+        max_output_tokens=1024
     )
-    
-    # Test connection
-    test_response = llm.invoke("Hello")
-    print(f"{SUCCESS} Gemini connection successful: {test_response.content[:50]}...")
-    
+    print(f"{SUCCESS} Gemini connection successful")
 except Exception as e:
     print(f"{ERROR} Gemini connection failed: {e}")
-    print("Make sure GOOGLE_API_KEY is set in your .env file")
-    print("Get your API key from: https://aistudio.google.com/app/apikey")
     raise
 
-# Create tools using the factory function
-tools = create_logistics_tools()
+# Supabase logistics functions
+def get_logistics_data(tracking_number: str = None) -> List[Dict]:
+    """Get logistics data from Supabase."""
+    try:
+        if tracking_number:
+            response = supabase.table('logistics').select('*').eq('tracking_number', tracking_number).execute()
+        else:
+            response = supabase.table('logistics').select('*').limit(10).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error fetching logistics data: {e}")
+        return []
 
-# Gemini 1.5 Flash optimized system prompt
-SYSTEM_PROMPT = """You are LogisticsAgent, a specialized assistant for Aramex and Naqel logistics operations.
+def update_logistics_status(tracking_number: str, status: str, location: str = None) -> bool:
+    """Update logistics status in Supabase."""
+    try:
+        update_data = {
+            'status': status,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        if location:
+            update_data['current_location'] = location
+            
+        response = supabase.table('logistics').update(update_data).eq('tracking_number', tracking_number).execute()
+        return len(response.data) > 0
+    except Exception as e:
+        print(f"Error updating logistics status: {e}")
+        return False
 
-Available tools:
-{tools}
+def create_logistics_entry(data: Dict) -> Dict:
+    """Create new logistics entry in Supabase."""
+    try:
+        response = supabase.table('logistics').insert(data).execute()
+        return response.data[0] if response.data else {}
+    except Exception as e:
+        print(f"Error creating logistics entry: {e}")
+        return {}
 
-You help with:
-- Tracking shipments and packages
-- Scheduling pickups and deliveries  
-- Checking carrier status and performance
-- Rerouting delayed shipments
-- Providing shipping analytics
+# Enhanced logistics tools with Supabase
+def create_enhanced_logistics_tools():
+    """Create logistics tools with Supabase integration."""
+    
+    def track_shipment(tracking_number: str) -> str:
+        """Track shipment using Supabase data."""
+        data = get_logistics_data(tracking_number)
+        if data:
+            shipment = data[0]
+            return json.dumps({
+                "tracking_number": shipment.get('tracking_number'),
+                "status": shipment.get('status'),
+                "current_location": shipment.get('current_location'),
+                "estimated_delivery": shipment.get('estimated_delivery'),
+                "carrier": shipment.get('carrier')
+            })
+        return json.dumps({"error": "Shipment not found"})
+    
+    def schedule_pickup(origin: str, destination: str, carrier: str = "aramex") -> str:
+        """Schedule pickup and create entry in Supabase."""
+        tracking_number = f"PU{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        data = {
+            'tracking_number': tracking_number,
+            'origin': origin,
+            'destination': destination,
+            'carrier': carrier,
+            'status': 'pickup_scheduled',
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }
+        result = create_logistics_entry(data)
+        if result:
+            return json.dumps({"success": True, "tracking_number": tracking_number, "status": "pickup_scheduled"})
+        return json.dumps({"error": "Failed to schedule pickup"})
+    
+    def get_all_shipments() -> str:
+        """Get all recent shipments."""
+        data = get_logistics_data()
+        return json.dumps(data)
+    
+    def update_shipment_status(tracking_number: str, status: str, location: str = None) -> str:
+        """Update shipment status."""
+        success = update_logistics_status(tracking_number, status, location)
+        if success:
+            return json.dumps({"success": True, "updated": True})
+        return json.dumps({"error": "Failed to update status"})
+    
+    return [
+        Tool(name="track_shipment", description="Track a shipment by tracking number", func=track_shipment),
+        Tool(name="schedule_pickup", description="Schedule pickup from origin to destination", func=schedule_pickup),
+        Tool(name="get_all_shipments", description="Get all recent shipments", func=get_all_shipments),
+        Tool(name="update_shipment_status", description="Update shipment status and location", func=update_shipment_status)
+    ]
 
-Guidelines:
-1. Always validate tracking numbers and addresses
-2. Provide specific details and clear status updates
-3. Escalate delays over {delay_threshold_hours} hours
-4. Suggest alternatives when needed
-5. Use JSON format for tool inputs
-6. Be concise and professional in responses
-7. Format responses with clear structure and emojis
+tools = create_enhanced_logistics_tools()
 
-Current context: {shipment_context}
+# Agent capabilities
+AGENT_CAPABILITIES = {
+    "track": "Track shipments by tracking number",
+    "schedule": "Schedule new pickups and deliveries", 
+    "status": "Check and update shipment status",
+    "list": "View all recent shipments",
+    "help": "Show available commands and capabilities"
+}
 
-IMPORTANT: When using tools, follow this exact format:
-Action: tool_name
-Action Input: {{"parameter": "value"}}
-
-User request: {input}
-{agent_scratchpad}"""
-
-# Load custom prompt if available
+# Load custom prompt from file or use default
 PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "logistics_prompt.txt")
 if os.path.exists(PROMPT_PATH):
     with open(PROMPT_PATH, "r", encoding="utf-8") as f:
-        system_prompt = f.read()
+        SYSTEM_PROMPT = f.read()
+    print(f"{SUCCESS} Loaded custom prompt from logistics_prompt.txt")
 else:
-    system_prompt = SYSTEM_PROMPT
+    # Default prompt if file doesn't exist
+    SYSTEM_PROMPT = """You are LogisticsAgent, connected to a Supabase logistics database.
 
-prompt = PromptTemplate.from_template(system_prompt)
+Available tools: {tools}
 
-# Create agent with Gemini
+I can help you with:
+1. Track shipments: "track ABC123"
+2. Schedule pickups: "schedule pickup from Riyadh to Jeddah"
+3. Update status: "update ABC123 status to delivered"
+4. List shipments: "show all shipments"
+5. Get help: "what can you do?"
+
+Guidelines:
+- Always use Supabase data for tracking and updates
+- Provide clear, structured responses with emojis
+- Ask for clarification when needed
+- Format responses professionally
+
+Current request: {input}
+{agent_scratchpad}"""
+    print(f"⚠️  Using default prompt. Create prompts/logistics_prompt.txt for custom prompt")
+
+prompt = PromptTemplate.from_template(SYSTEM_PROMPT)
 agent = create_react_agent(llm, tools, prompt)
-
-# Updated AgentExecutor configuration for Gemini
 agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    handle_parsing_errors=True,
-    max_iterations=5,
-    return_intermediate_steps=True,
-    early_stopping_method="generate",
-    # Gemini-specific configuration
-    max_execution_time=30  # 30 seconds timeout
+    agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, max_iterations=3
 )
 
 class AgentState(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
-    intermediate_steps: List
-    shipment_context: Dict
-    user_preferences: Dict
-    active_operations: List
-
-def initialize_state() -> AgentState:
-    return {
-        "messages": [],
-        "intermediate_steps": [],
-        "shipment_context": {},
-        "user_preferences": {},
-        "active_operations": []
-    }
-
-def is_logistics_related(message: str) -> bool:
-    """Enhanced logistics query detection."""
-    logistics_keywords = [
-        'ship', 'shipping', 'delivery', 'pickup', 'track', 'tracking',
-        'carrier', 'aramex', 'naqel', 'route', 'reroute', 'dispatch',
-        'logistics', 'transport', 'freight', 'schedule', 'status',
-        'delay', 'estimate', 'eta', 'delivery time', 'when will',
-        'where is', 'shipment', 'package', 'order', 'location',
-        'warehouse', 'distribution', 'fulfillment', 'courier',
-        'express', 'standard', 'economy', 'overnight', 'same day'
-    ]
-    
-    lower_msg = message.lower()
-
-    # Check for logistics keywords
-    for kw in logistics_keywords:
-        if kw in lower_msg:
-            return True
-
-    # Check for tracking number patterns
-    if TRACKING_PATTERN.search(message.upper()):
-        return True
-    
-    # Check for common logistics phrases
-    logistics_phrases = [
-        'when will it arrive', 'where is my package', 'delivery status',
-        'shipping cost', 'pickup time', 'delivery address'
-    ]
-    
-    for phrase in logistics_phrases:
-        if phrase in lower_msg:
-            return True
-
-    return False
-
-def extract_tracking_numbers(message: str) -> List[str]:
-    """Extract tracking numbers from message text."""
-    return TRACKING_PATTERN.findall(message.upper())
-
-def check_for_delays(shipment_info: Dict) -> Dict[str, Any]:
-    """Enhanced delay detection with proper timezone handling."""
-    if not shipment_info:
-        return {"has_delay": False}
-    
-    estimated_time = shipment_info.get('estimated_delivery')
-    if not estimated_time:
-        return {"has_delay": False}
-    
-    try:
-        # Parse delivery time with proper timezone handling
-        if isinstance(estimated_time, str):
-            if estimated_time.endswith('Z'):
-                est_dt = datetime.fromisoformat(estimated_time.replace('Z', '+00:00'))
-            elif '+' in estimated_time or estimated_time.endswith('UTC'):
-                est_dt = datetime.fromisoformat(estimated_time.replace('UTC', '+00:00'))
-            else:
-                # Assume UTC for naive datetime
-                naive_dt = datetime.fromisoformat(estimated_time)
-                est_dt = naive_dt.replace(tzinfo=timezone.utc)
-        else:
-            est_dt = estimated_time
-        
-        # Current time in UTC
-        current_time = datetime.now(timezone.utc)
-        
-        # Ensure both datetimes are timezone-aware
-        if est_dt.tzinfo is None:
-            est_dt = est_dt.replace(tzinfo=timezone.utc)
-        
-        delay_hours = (current_time - est_dt).total_seconds() / 3600
-        
-        if delay_hours > delay_threshold_hours:
-            return {
-                "has_delay": True,
-                "delay_hours": delay_hours,
-                "severity": "high" if delay_hours > 24 else "medium",
-                "recommended_action": "reroute" if delay_hours > 12 else "monitor"
-            }
-    except Exception as e:
-        print(f"Error parsing delivery time: {e}")
-        return {"has_delay": False}
-    
-    return {"has_delay": False}
-
-def format_response(content: str, context: Dict = None) -> str:
-    """Format response with context."""
-    if context and context.get("tracking_number"):
-        tracking_info = f"{PACKAGE} Tracking: {context['tracking_number']}\n"
-        content = tracking_info + content
-    
-    return content
 
 def assistant(state: AgentState) -> Dict[str, Any]:
     try:
-        user_message = state["messages"][-1].content
-        current_context = state.get("shipment_context", {})
+        user_message = state["messages"][-1].content.lower()
         
-        # Check if logistics related
-        if not is_logistics_related(user_message):
-            response = (
-                f"Hello! I'm your LogisticsAgent {TRUCK}\n\n"
-                "I can help you with:\n"
-                f"• {PACKAGE} Schedule pickups (Aramex & Naqel)\n"
-                f"• {SEARCH} Track shipments\n"
-                f"• {CHART} Check carrier status\n"
-                f"• {REFRESH} Reroute packages\n"
-                f"• {CLOCK} Update delivery estimates\n"
-                f"• {ANALYTICS} Get shipping analytics\n\n"
-                "Try: 'Track ABC123XYZ' or 'Schedule pickup from Riyadh'"
-            )
-            return {
-                "messages": [AIMessage(content=response)],
-                "intermediate_steps": [],
-                "shipment_context": current_context,
-                "user_preferences": state.get("user_preferences", {}),
-                "active_operations": state.get("active_operations", [])
-            }
+        # Handle help requests
+        if any(word in user_message for word in ['help', 'what can you do', 'capabilities', 'options']):
+            help_response = f"""
+{ROBOT} **LogisticsAgent Capabilities**
 
-        # Extract tracking numbers
-        tracking_numbers = extract_tracking_numbers(user_message)
-        if tracking_numbers:
-            current_context["extracted_tracking"] = tracking_numbers
+I'm connected to your Supabase logistics database and can help with:
 
-        # Prepare agent input - Optimized for Gemini
-        agent_input = {
-            "input": user_message,
-            "shipment_context": json.dumps(current_context, ensure_ascii=False),
-            "delay_threshold_hours": delay_threshold_hours,
-            "preferred_carriers": preferred_carriers
-        }
+{PACKAGE} **Tracking**: Track any shipment
+• "track ABC123" - Get shipment details
+• "where is my package ABC123"
 
-        # Execute agent with error handling
-        try:
-            result = agent_executor.invoke(agent_input)
-        except Exception as agent_error:
-            # Fallback response if agent fails
-            print(f"Agent execution error: {agent_error}")
-            return {
-                "messages": [AIMessage(content=f"{ERROR} I encountered an issue processing your request. Please try rephrasing your query or contact support.")],
-                "intermediate_steps": [],
-                "shipment_context": current_context,
-                "user_preferences": state.get("user_preferences", {}),
-                "active_operations": state.get("active_operations", [])
-            }
+{TRUCK} **Scheduling**: Create new shipments  
+• "schedule pickup from Riyadh to Jeddah"
+• "book delivery via Aramex"
 
-        # Process results
-        content = result.get("output", "")
-        intermediate_steps = result.get("intermediate_steps", [])
+{CHART} **Status Updates**: Modify shipment status
+• "update ABC123 status to delivered" 
+• "mark ABC123 as delayed"
+
+{SEARCH} **Listing**: View all shipments
+• "show all shipments"
+• "list recent deliveries"
+
+{CLIPBOARD} **Database**: Real-time Supabase integration
+• All data synced with your logistics table
+• Automatic tracking number generation
+
+What would you like me to help you with?
+            """
+            return {"messages": [AIMessage(content=help_response.strip())]}
         
-        updated_context = current_context.copy()
-        active_ops = state.get("active_operations", [])
-        
-        # Process tool results
-        for step in intermediate_steps:
-            if hasattr(step, 'observation') and step.observation:
-                try:
-                    if isinstance(step.observation, str):
-                        obs_data = json.loads(step.observation)
-                    else:
-                        obs_data = step.observation
-                    
-                    if isinstance(obs_data, dict):
-                        # Update context
-                        if obs_data.get("tracking_number"):
-                            updated_context["tracking_number"] = obs_data["tracking_number"]
-                        if obs_data.get("status"):
-                            updated_context["current_status"] = obs_data["status"]
-                        if obs_data.get("estimated_delivery"):
-                            updated_context["estimated_delivery"] = obs_data["estimated_delivery"]
-                        
-                        # Check for delays
-                        delay_info = check_for_delays(obs_data)
-                        if delay_info.get("has_delay"):
-                            delay_msg = (
-                                f"\n\n{ERROR} DELAY ALERT: {delay_info['delay_hours']:.1f}h delay\n"
-                                f"Severity: {delay_info['severity'].upper()}\n"
-                                f"Action: {delay_info['recommended_action'].upper()}"
-                            )
-                            content += delay_msg
-                            
-                            active_ops.append({
-                                "type": "delay_monitoring",
-                                "tracking_number": obs_data.get("tracking_number"),
-                                "delay_hours": delay_info["delay_hours"],
-                                "timestamp": datetime.now(timezone.utc).isoformat()
-                            })
-                            
-                            if delay_info["recommended_action"] == "reroute":
-                                content += f"\n{CLIPBOARD} Escalating to optimization..."
+        # Handle specific logistics requests
+        if any(word in user_message for word in ['track', 'schedule', 'update', 'list', 'show']):
+            try:
+                result = agent_executor.invoke({"input": user_message})
+                content = result.get("output", "I couldn't process that request.")
                 
-                except (json.JSONDecodeError, TypeError):
-                    continue
+                # Add context based on action
+                if 'track' in user_message:
+                    content = f"{SEARCH} **Tracking Result**\n\n{content}"
+                elif 'schedule' in user_message:
+                    content = f"{TRUCK} **Pickup Scheduled**\n\n{content}"
+                elif 'update' in user_message:
+                    content = f"{REFRESH} **Status Updated**\n\n{content}"
+                elif any(word in user_message for word in ['list', 'show']):
+                    content = f"{CHART} **Shipment List**\n\n{content}"
+                    
+                return {"messages": [AIMessage(content=content)]}
+            except Exception as e:
+                return {"messages": [AIMessage(content=f"{ERROR} Error processing request: {str(e)}")]}
+        
+        # Default response for unclear requests
+        suggestion_response = f"""
+{ROBOT} I'm not sure what you'd like me to do. Here are some options:
 
-        formatted_content = format_response(content, updated_context)
+**Quick Actions:**
+• "track [tracking_number]" - Track a shipment
+• "schedule pickup from [origin] to [destination]" - Book pickup
+• "show all shipments" - View recent shipments
+• "help" - See all capabilities
 
-        return {
-            "messages": [AIMessage(content=formatted_content)],
-            "intermediate_steps": [],
-            "shipment_context": updated_context,
-            "user_preferences": state.get("user_preferences", {}),
-            "active_operations": active_ops
-        }
+**Examples:**
+• "track ABC123XYZ"
+• "schedule pickup from Riyadh to Jeddah via Aramex"
+• "update ABC123 status to delivered"
 
+What would you like me to help you with?
+        """
+        
+        return {"messages": [AIMessage(content=suggestion_response.strip())]}
+        
     except Exception as e:
-        error_msg = (
-            f"{ERROR} Error: {str(e)}\n\n"
-            "Please try again or ask about:\n"
-            "- Scheduling pickups\n"
-            "- Tracking shipments\n"
-            "- Checking carrier status\n"
-            "- Rerouting packages"
-        )
-        return {
-            "messages": [AIMessage(content=error_msg)],
-            "intermediate_steps": [],
-            "shipment_context": state.get("shipment_context", {}),
-            "user_preferences": state.get("user_preferences", {}),
-            "active_operations": state.get("active_operations", [])
-        }
+        error_msg = f"{ERROR} Something went wrong: {str(e)}\n\nTry: 'help' to see what I can do."
+        return {"messages": [AIMessage(content=error_msg)]}
 
 # Build LangGraph
 builder = StateGraph(AgentState)
@@ -405,158 +314,31 @@ builder.add_edge(START, "assistant")
 builder.add_edge("assistant", END)
 logistics_assistant = builder.compile()
 
-def handle_carrier_webhook(webhook_data: Dict) -> Dict[str, Any]:
-    """Enhanced webhook handler."""
-    try:
-        tracking_number = webhook_data.get('tracking_number')
-        status = webhook_data.get('status')
-        location = webhook_data.get('current_location')
-        estimated_delivery = webhook_data.get('estimated_delivery')
-        carrier = webhook_data.get('carrier', 'unknown')
-        
-        if not tracking_number or not status:
-            return {
-                'processed': False,
-                'error': 'Missing required fields'
-            }
-        
-        state = initialize_state()
-        state["messages"] = [
-            HumanMessage(content=f"Status update for {tracking_number}: {status}")
-        ]
-        state["shipment_context"] = {
-            'tracking_number': tracking_number,
-            'status': status,
-            'current_location': location,
-            'estimated_delivery': estimated_delivery,
-            'carrier': carrier,
-            'last_updated': datetime.now(timezone.utc).isoformat(),
-            'webhook_source': True
-        }
-        
-        response_state = logistics_assistant.invoke(state)
-        
-        delay_info = check_for_delays(state["shipment_context"])
-        needs_escalation = delay_info.get("has_delay") and delay_info.get("severity") == "high"
-        
-        return {
-            'processed': True,
-            'response': response_state["messages"][-1].content,
-            'context': response_state["shipment_context"],
-            'needs_escalation': needs_escalation,
-            'active_operations': response_state.get("active_operations", [])
-        }
-        
-    except Exception as e:
-        return {
-            'processed': False,
-            'error': str(e)
-        }
-
-def get_agent_status() -> Dict[str, Any]:
-    """Get agent status."""
-    return {
-        "status": "active",
-        "model": llm_model,
-        "provider": "google",
-        "supported_carriers": preferred_carriers,
-        "delay_threshold_hours": delay_threshold_hours,
-        "available_tools": [tool.name for tool in tools],
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-
-def process_batch_requests(requests: List[Dict]) -> List[Dict]:
-    """Process batch requests."""
-    results = []
-    
-    for request in requests:
-        try:
-            state = initialize_state()
-            state["messages"] = [HumanMessage(content=request.get("query", ""))]
-            
-            response_state = logistics_assistant.invoke(state)
-            results.append({
-                "request_id": request.get("id", "unknown"),
-                "status": "success",
-                "response": response_state["messages"][-1].content,
-                "context": response_state.get("shipment_context", {})
-            })
-        except Exception as e:
-            results.append({
-                "request_id": request.get("id", "unknown"),
-                "status": "error",
-                "error": str(e)
-            })
-    
-    return results
+def chat_with_agent(message: str) -> str:
+    """Simple chat interface."""
+    state = {"messages": [HumanMessage(content=message)]}
+    response = logistics_assistant.invoke(state)
+    return response["messages"][-1].content
 
 if __name__ == "__main__":
-    print("=== LogisticsAgent with Gemini 1.5 Flash Test Suite ===")
+    print(f"\n{SUCCESS} LogisticsAgent with Supabase Integration Ready!")
+    print(f"{DATABASE} Connected to: {SUPABASE_URL}")
+    print(f"{ROBOT} Model: {llm_model}")
     
-    # Test 1: Agent Executor
-    print("\n1. Testing AgentExecutor...")
-    try:
-        test_result = agent_executor.invoke({
-            "input": "Schedule pickup from Riyadh to Jeddah via Aramex",
-            "shipment_context": "{}",
-            "delay_threshold_hours": delay_threshold_hours
-        })
-        print(f"{SUCCESS} AgentExecutor test passed")
-        print("Output:", test_result["output"][:200] + "...")
-    except Exception as e:
-        print(f"{ERROR} AgentExecutor test failed: {e}")
-
-    # Test 2: LangGraph
-    print("\n2. Testing LangGraph...")
-    try:
-        state = initialize_state()
-        state["messages"] = [HumanMessage(content="Track shipment ABC123XYZ")]
-        
-        response_state = logistics_assistant.invoke(state)
-        print(f"{SUCCESS} LangGraph test passed")
-        print("Response:", response_state["messages"][-1].content[:200] + "...")
-    except Exception as e:
-        print(f"{ERROR} LangGraph test failed: {e}")
-
-    # Test 3: Webhook Handler
-    print("\n3. Testing Webhook Handler...")
-    try:
-        webhook_data = {
-            'tracking_number': 'ABC123XYZ',
-            'status': 'delayed',
-            'current_location': 'Riyadh Distribution Center',
-            'estimated_delivery': '2025-06-06T14:00:00Z',
-            'carrier': 'aramex'
-        }
-        result = handle_carrier_webhook(webhook_data)
-        print(f"{SUCCESS} Webhook test passed")
-        print("Processed:", result.get('processed'))
-        print("Needs escalation:", result.get('needs_escalation'))
-    except Exception as e:
-        print(f"{ERROR} Webhook test failed: {e}")
-
-    # Test 4: Batch Processing
-    print("\n4. Testing Batch Processing...")
-    try:
-        batch_requests = [
-            {"id": "req1", "query": "Track ABC123"},
-            {"id": "req2", "query": "Aramex status Riyadh to Jeddah"}
-        ]
-        batch_results = process_batch_requests(batch_requests)
-        print(f"{SUCCESS} Batch processing test passed")
-        print(f"Processed {len(batch_results)} requests")
-    except Exception as e:
-        print(f"{ERROR} Batch processing test failed: {e}")
-
-    # Test 5: Agent Status
-    print("\n5. Testing Agent Status...")
-    try:
-        status = get_agent_status()
-        print(f"{SUCCESS} Agent status test passed")
-        print("Status:", status["status"])
-        print("Model:", status["model"])
-        print("Tools:", len(status["available_tools"]))
-    except Exception as e:
-        print(f"{ERROR} Agent status test failed: {e}")
-
-    print("\n=== Test Suite Complete ===")
+    # Interactive chat loop
+    print(f"\n{TRUCK} Type 'help' to see what I can do, or 'quit' to exit\n")
+    
+    while True:
+        try:
+            user_input = input("You: ").strip()
+            if user_input.lower() in ['quit', 'exit', 'bye']:
+                print(f"{SUCCESS} Goodbye!")
+                break
+            if user_input:
+                response = chat_with_agent(user_input)
+                print(f"\nAgent: {response}\n")
+        except KeyboardInterrupt:
+            print(f"\n{SUCCESS} Goodbye!")
+            break
+        except Exception as e:
+            print(f"{ERROR} Error: {e}")

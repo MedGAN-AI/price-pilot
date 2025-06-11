@@ -1,5 +1,6 @@
 import os
 import yaml
+import sys
 import pickle
 from typing import Any, Dict, TypedDict, Annotated, List
 
@@ -16,8 +17,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
 # Import the forecasting tool
-from .tools.forecast_tools import forecast_with_arima_tool
+from tools.forecast_tools import forecast_with_arima_tool
 
 load_dotenv()
 
@@ -138,7 +141,7 @@ if __name__ == "__main__":
     try:
         state = initialize_state()
         state["messages"] = [
-            HumanMessage(content="What is the forecast for next week?")
+            HumanMessage(content="What is the forecast for next 3 days?")
         ]
         state["intermediate_steps"] = []
         response_state = forecast_assistant.invoke(state)

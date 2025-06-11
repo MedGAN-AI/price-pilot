@@ -31,28 +31,34 @@ def build_agent(llm, tools, prompt_template: PromptTemplate, max_iterations: int
     if isinstance(prompt_template, str):
         prompt = PromptTemplate.from_template(prompt_template)
     else:
-        prompt = prompt_template
-
-    # Create the agent and executor
+        prompt = prompt_template    # Create the agent and executor
     agent = create_react_agent(llm, tools, prompt)
     executor = AgentExecutor.from_agent_and_tools(
         agent=agent,
         tools=tools,
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=max_iterations,
+        max_iterations=3,  # Reduced from 10 to 3 to force faster completion
+        early_stopping_method="generate",  # Stop early if possible
         return_intermediate_steps=True
-    )
-
-    # Define the assistant node for the StateGraph
+    )    # Define the assistant node for the StateGraph
     def assistant(state: AgentState) -> Dict[str, Any]:
         try:
             user_message = state["messages"][-1].content
+            
+            # Custom stopping logic for get_available_products
+            if "get_available_products" in str(state.get("intermediate_steps", [])):
+                # If we already called get_available_products, don't run executor again
+                return {
+                    "messages": [AIMessage(content="I've already shown you the available products. Please let me know which items you'd like to order.")],
+                    "intermediate_steps": []
+                }
+            
             result = executor.invoke({"input": user_message})
             content = result["output"]
             if isinstance(content, dict):
                 content = content.get("output") or content.get("tool_input") or str(content)
-            return {"messages": [AIMessage(content=content)], "intermediate_steps": []}
+            return {"messages": [AIMessage(content=content)], "intermediate_steps": result.get("intermediate_steps", [])}
         except Exception as e:
             error_msg = f"I apologize, but I encountered an error: {e}"
             return {"messages": [AIMessage(content=error_msg)], "intermediate_steps": []}

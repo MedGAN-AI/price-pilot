@@ -680,3 +680,62 @@ class OrderService:
         except Exception as e:
             self.logger.error(f"Error finding/creating user {email}: {str(e)}")
             return None
+    
+    def get_available_products(self, limit: int = 20, category: str = None) -> Dict[str, Any]:
+        """
+        Get list of available products to help customers discover what they can order.
+        
+        Args:
+            limit: Maximum number of products to return (default 20)
+            category: Optional category filter
+        
+        Returns:
+            Dict with products list and metadata
+        """
+        with self._error_handler("get_available_products"):
+            try:
+                # Build query
+                query = self.supabase.table('products').select(
+                    'sku, name, description, price, category'
+                )
+                
+                # Add category filter if specified
+                if category:
+                    query = query.eq('category', category.strip())
+                
+                # Execute query with limit
+                response = query.limit(limit).execute()
+                
+                if response.data:
+                    # Format products for display
+                    products = []
+                    for product in response.data:
+                        products.append({
+                            'sku': product['sku'],
+                            'name': product['name'],
+                            'description': product['description'],
+                            'price': f"${float(product['price']):.2f}",
+                            'category': product['category']
+                        })
+                    
+                    return {
+                        'success': True,
+                        'products': products,
+                        'count': len(products),
+                        'message': f"Found {len(products)} available products" + (f" in category '{category}'" if category else "")
+                    }
+                else:
+                    return {
+                        'success': True,
+                        'products': [],
+                        'count': 0,
+                        'message': "No products found" + (f" in category '{category}'" if category else "")
+                    }
+                    
+            except Exception as e:
+                self.logger.error(f"Error fetching available products: {str(e)}")
+                return {
+                    'success': False,
+                    'error': str(e),
+                    'message': f"Failed to fetch products: {str(e)}"
+                }

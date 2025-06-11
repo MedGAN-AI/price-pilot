@@ -209,6 +209,86 @@ def cancel_order_tool_func(order_id: str) -> str:
         })
 
 
+def get_available_products_tool_func(*args, **kwargs) -> str:
+    """
+    Get list of available products to help customers discover what they can order.
+    
+    Args:
+        Can receive parameters as:
+        1. get_available_products_tool_func() - no parameters, get default products
+        2. get_available_products_tool_func(limit) - specify limit
+        3. get_available_products_tool_func(limit, category) - specify limit and category
+        4. get_available_products_tool_func(**kwargs) - keyword arguments
+    
+    Returns:
+        JSON string with available products
+    """
+    try:
+        # Handle different parameter formats
+        limit = 20  # default
+        category = None
+        
+        # Check if first argument is a JSON string (common with LangChain)
+        if len(args) == 1 and isinstance(args[0], str):
+            try:
+                # Try to parse as JSON
+                if args[0].strip() in ['{}', '']:
+                    # Empty JSON or empty string - use defaults
+                    pass
+                else:
+                    params = json.loads(args[0])
+                    limit = int(params.get('limit', 20))
+                    category = params.get('category', None)
+            except (json.JSONDecodeError, ValueError):
+                # If not valid JSON, treat as category name
+                category = args[0] if args[0] else None
+        elif len(args) >= 1 and not isinstance(args[0], str):
+            # Direct call with positional args (non-string)
+            try:
+                limit = int(args[0]) if args[0] is not None else 20
+            except (ValueError, TypeError):
+                limit = 20
+            if len(args) >= 2:
+                category = args[1] if args[1] else None
+        elif kwargs:
+            # Keyword arguments
+            try:
+                limit = int(kwargs.get('limit', 20))
+            except (ValueError, TypeError):
+                limit = 20
+            category = kwargs.get('category', None)
+          # Call service method
+        result = order_service.get_available_products(limit=limit, category=category)
+        
+        # Format the response to encourage Final Answer
+        if result.get('success') and result.get('products'):
+            formatted_response = {
+                "success": True,
+                "message": f"Here are our available products:\n\n",
+                "products": result['products'],
+                "instruction": "Please provide Final Answer with this product list to the customer"
+            }
+            # Add formatted product display
+            product_list = []
+            for product in result['products']:
+                product_list.append(f"• {product['name']} ({product['sku']}) - {product['price']} - {product['description']}")
+            
+            formatted_response["formatted_display"] = "\n".join(product_list)
+            formatted_response["message"] += formatted_response["formatted_display"]
+            formatted_response["message"] += "\n\nPlease let me know which items you'd like to order with quantities and your email address."
+            
+            return json.dumps(formatted_response, indent=2)
+        else:
+            return json.dumps(result, indent=2)
+        
+    except Exception as e:
+        return json.dumps({
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to get available products: {str(e)}"
+        })
+
+
 # Create the tools without args_schema to fix LangChain parameter parsing
 create_order_tool = Tool(
     name="create_order",
@@ -257,10 +337,26 @@ cancel_order_tool = Tool(
     func=cancel_order_tool_func
 )
 
+get_available_products_tool = Tool(
+    name="get_available_products",
+    description="""Get list of available products to show customers what they can order. 
+    
+    CRITICAL: After calling this tool successfully, you MUST immediately provide a Final Answer 
+    with the product list. DO NOT call this tool again.
+    
+    Parameters (optional):
+    - limit: Number of products to return (default 20)
+    - category: Filter by category (optional)
+    
+    Example usage: get_available_products()""",
+    func=get_available_products_tool_func
+)
+
 # Export all tools
 __all__ = [
     'create_order_tool',
     'check_order_status_tool', 
     'update_order_status_tool',
-    'cancel_order_tool'
+    'cancel_order_tool',
+    'get_available_products_tool'
 ]

@@ -587,19 +587,19 @@ def get_supported_carriers() -> List[str]:
 def format_tracking_response(tracking_data: Dict[str, Any]) -> str:
     """Format tracking response for better readability"""
     if tracking_data.get("status") == "error":
-        return f"❌ Error: {tracking_data.get('message')}"
+        return f"[ERROR] Error: {tracking_data.get('message')}"
     
     status = tracking_data.get("status", tracking_data.get("current_status", "Unknown"))
     location = tracking_data.get("current_location", "Unknown")
     estimated_delivery = tracking_data.get("estimated_delivery", "Not available")
-    mock_mode = "🧪 (Mock Mode)" if tracking_data.get("mock_mode") else ""
+    mock_mode = "[TEST] (Mock Mode)" if tracking_data.get("mock_mode") else ""
     
     return f"""
-📦 Shipment Status: {status} {mock_mode}
-📍 Current Location: {location}
-🚚 Estimated Delivery: {estimated_delivery}
-🏢 Carrier: {tracking_data.get('carrier', 'Unknown')}
-🔢 Tracking Number: {tracking_data.get('tracking_number', 'Unknown')}
+[PACKAGE] Shipment Status: {status} {mock_mode}
+[LOCATION] Current Location: {location}
+[TRUCK] Estimated Delivery: {estimated_delivery}
+[BUILDING] Carrier: {tracking_data.get('carrier', 'Unknown')}
+[NUMBER] Tracking Number: {tracking_data.get('tracking_number', 'Unknown')}
 """
 
 def get_monitor_info() -> Dict[str, Any]:

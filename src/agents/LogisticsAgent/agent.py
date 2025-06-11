@@ -42,6 +42,9 @@ preferred_carriers = config.get("logistics", {}).get("preferred_carriers", ["ara
 tracking_pattern_str = config.get("tracking_pattern", "^[A-Z0-9]{8,20}$")
 TRACKING_PATTERN = re.compile(tracking_pattern_str)
 
+# Import display constants for beautiful output
+from src.core.display_constants import SUCCESS, ERROR, ROBOT, TRUCK, PACKAGE, SEARCH, CHART, REFRESH, CLOCK, ANALYTICS, CLIPBOARD
+
 # Initialize Gemini 1.5 Flash LLM
 print(f"🤖 Initializing Gemini 1.5 Flash...")
 try:
@@ -242,7 +245,7 @@ def check_for_delays(shipment_info: Dict) -> Dict[str, Any]:
 def format_response(content: str, context: Dict = None) -> str:
     """Format response with context."""
     if context and context.get("tracking_number"):
-        tracking_info = f"📦 Tracking: {context['tracking_number']}\n"
+        tracking_info = f"[PACKAGE] Tracking: {context['tracking_number']}\n"
         content = tracking_info + content
     
     return content
@@ -251,18 +254,17 @@ def assistant(state: AgentState) -> Dict[str, Any]:
     try:
         user_message = state["messages"][-1].content
         current_context = state.get("shipment_context", {})
-
         # Check if logistics related
         if not is_logistics_related(user_message):
             response = (
-                "Hello! I'm your LogisticsAgent 🚚\n\n"
+                f"Hello! I'm your LogisticsAgent 🚚\n\n"
                 "I can help you with:\n"
-                "• 📦 Schedule pickups (Aramex & Naqel)\n"
-                "• 🔍 Track shipments\n"
-                "• 📊 Check carrier status\n"
-                "• 🔄 Reroute packages\n"
-                "• ⏰ Update delivery estimates\n"
-                "• 📈 Get shipping analytics\n\n"
+                f"• 📦 Schedule pickups (Aramex & Naqel)\n"
+                f"• 🔍 Track shipments\n"
+                f"• 📊 Check carrier status\n"
+                f"• 🔄 Reroute packages\n"
+                f"• ⏰ Update delivery estimates\n"
+                f"• 📈 Get shipping analytics\n\n"
                 "Try: 'Track ABC123XYZ' or 'Schedule pickup from Riyadh'"
             )
             return {
@@ -329,7 +331,7 @@ def assistant(state: AgentState) -> Dict[str, Any]:
                         delay_info = check_for_delays(obs_data)
                         if delay_info.get("has_delay"):
                             delay_msg = (
-                                f"\n\n⚠️ DELAY ALERT: {delay_info['delay_hours']:.1f}h delay\n"
+                                f"\n\n[WARNING] DELAY ALERT: {delay_info['delay_hours']:.1f}h delay\n"
                                 f"Severity: {delay_info['severity'].upper()}\n"
                                 f"Action: {delay_info['recommended_action'].upper()}"
                             )
@@ -343,7 +345,7 @@ def assistant(state: AgentState) -> Dict[str, Any]:
                             })
                             
                             if delay_info["recommended_action"] == "reroute":
-                                content += "\n📋 Escalating to optimization..."
+                                content += "\n[CLIPBOARD] Escalating to optimization..."
                 
                 except (json.JSONDecodeError, TypeError):
                     continue
@@ -360,12 +362,11 @@ def assistant(state: AgentState) -> Dict[str, Any]:
 
     except Exception as e:
         error_msg = (
-            f"❌ Error: {str(e)}\n\n"
-            "Please try again or ask about:\n"
-            "• Scheduling pickups\n"
-            "• Tracking shipments\n"
-            "• Checking carrier status\n"
-            "• Rerouting packages"
+            f"[ERROR] Error: {str(e)}\n\n"            "Please try again or ask about:\n"
+            "- Scheduling pickups\n"
+            "- Tracking shipments\n"
+            "- Checking carrier status\n"
+            "- Rerouting packages"
         )
         return {
             "messages": [AIMessage(content=error_msg)],
@@ -478,10 +479,10 @@ if __name__ == "__main__":
             "shipment_context": "{}",
             "delay_threshold_hours": delay_threshold_hours
         })
-        print("✅ AgentExecutor test passed")
+        print("[CHECK] AgentExecutor test passed")
         print("Output:", test_result["output"][:200] + "...")
     except Exception as e:
-        print(f"❌ AgentExecutor test failed: {e}")
+        print(f"[ERROR] AgentExecutor test failed: {e}")
 
     # Test 2: LangGraph
     print("\n2. Testing LangGraph...")
@@ -490,10 +491,10 @@ if __name__ == "__main__":
         state["messages"] = [HumanMessage(content="Track shipment ABC123XYZ")]
         
         response_state = logistics_assistant.invoke(state)
-        print("✅ LangGraph test passed")
+        print("[CHECK] LangGraph test passed")
         print("Response:", response_state["messages"][-1].content[:200] + "...")
     except Exception as e:
-        print(f"❌ LangGraph test failed: {e}")
+        print(f"[ERROR] LangGraph test failed: {e}")
 
     # Test 3: Webhook Handler
     print("\n3. Testing Webhook Handler...")
@@ -506,11 +507,11 @@ if __name__ == "__main__":
             'carrier': 'aramex'
         }
         result = handle_carrier_webhook(webhook_data)
-        print("✅ Webhook test passed")
+        print("[CHECK] Webhook test passed")
         print("Processed:", result.get('processed'))
         print("Needs escalation:", result.get('needs_escalation'))
     except Exception as e:
-        print(f"❌ Webhook test failed: {e}")
+        print(f"[ERROR] Webhook test failed: {e}")
 
     # Test 4: Batch Processing
     print("\n4. Testing Batch Processing...")
@@ -520,20 +521,20 @@ if __name__ == "__main__":
             {"id": "req2", "query": "Aramex status Riyadh to Jeddah"}
         ]
         batch_results = process_batch_requests(batch_requests)
-        print("✅ Batch processing test passed")
+        print("[CHECK] Batch processing test passed")
         print(f"Processed {len(batch_results)} requests")
     except Exception as e:
-        print(f"❌ Batch processing test failed: {e}")
+        print(f"[ERROR] Batch processing test failed: {e}")
 
     # Test 5: Agent Status
     print("\n5. Testing Agent Status...")
     try:
         status = get_agent_status()
-        print("✅ Agent status test passed")
+        print("[CHECK] Agent status test passed")
         print("Status:", status["status"])
         print("Model:", status["model"])
         print("Tools:", len(status["available_tools"]))
     except Exception as e:
-        print(f"❌ Agent status test failed: {e}")
+        print(f"[ERROR] Agent status test failed: {e}")
 
     print("\n=== Test Suite Complete ===")

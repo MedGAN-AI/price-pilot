@@ -6,6 +6,9 @@ llm:
   model: "gemini-2.0-flash"
   temperature: 0.1
 
+# Agent execution settings
+max_iterations: 3
+
 # Order-specific settings
 order_settings:
   max_items_per_order: 50

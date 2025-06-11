@@ -1,3 +1,8 @@
+# ignore the files that are not needed in the repository currently, mostly they are for the Online Retail dataset with ML thing (we might deveop it later)
+data-piplines/
+data-preprocessing/
+infra/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -128,12 +133,14 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+
+#.env
+#env.bak/
+#env/
+
 .venv
-env/
 venv/
 ENV/
-env.bak/
 venv.bak/
 
 # Spyder project settings

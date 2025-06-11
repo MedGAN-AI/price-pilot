@@ -16,9 +16,9 @@ from langgraph.graph import START, END, StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
-# Import our two Tool objects (relative import since we're inside ChatAgent/)
-from .tools.order_tool import order_tool
-from .tools.recommend_tool import recommend_tool
+# ChatAgent will now use delegation tools instead of duplicate business logic tools
+from .tools.delegation_tools import delegation_tools
+from .tools.memory_tools import memory_tools, save_interaction
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Must be set in your .env
@@ -30,10 +30,8 @@ llm = ChatGoogleGenerativeAI(
     api_key=GOOGLE_API_KEY
 )
 
-# Collect all tools (order_tool, recommend_tool) plus a "Final Answer" tool
-tools = [
-    order_tool,
-    recommend_tool,
+# ChatAgent tools - delegation tools, memory tools, plus Final Answer
+tools = delegation_tools + memory_tools + [
     Tool(
         name="Final Answer",
         func=lambda x: x,  

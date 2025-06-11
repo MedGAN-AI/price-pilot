@@ -7,14 +7,15 @@ import yaml
 from typing import List
 
 # Import base agent framework
-from core.base_agent import build_agent, create_llm_from_config, load_prompt_from_file, AgentState, initialize_state
+from src.core.base_agent import build_agent, create_llm_from_config, load_prompt_from_file, AgentState, initialize_state
 
 # Import order tools
 from .tools.order_tools import (
     create_order_tool,
     check_order_status_tool,
     update_order_status_tool,
-    cancel_order_tool
+    cancel_order_tool,
+    get_available_products_tool
 )
 
 # Load configuration
@@ -34,7 +35,8 @@ tools = [
     create_order_tool,
     check_order_status_tool,
     update_order_status_tool,
-    cancel_order_tool
+    cancel_order_tool,
+    get_available_products_tool
 ]
 
 # Build the agent using shared framework

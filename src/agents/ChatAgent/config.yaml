@@ -1,0 +1,33 @@
+# ChatAgent Configuration - Standardized Core Format
+llm:
+  provider: "google-genai"
+  model: "gemini-2.0-flash"
+  temperature: 0.0
+
+agent:
+  type: "structured_chat"  # Uses structured chat for complex conversations
+  max_iterations: 10
+  early_stopping_method: "generate"
+  max_execution_time: 30
+
+specialized_config:
+  # ChatAgent specific configurations
+  conversation_memory: true
+  delegation_enabled: true
+  context_window: 20  # Number of previous messages to consider
+  stop_keywords: ["Final Answer"]
+  context_key: "chat_history"
+  
+  # Memory and session settings
+  session_timeout: 3600  # 1 hour
+  max_session_history: 100
+  
+  # Agent coordination settings
+  enable_multi_agent_flows: true
+  max_delegation_depth: 3
+
+# Agent-specific settings
+chat_settings:
+  max_conversation_length: 50
+  enable_proactive_suggestions: true
+  memory_persistence: true

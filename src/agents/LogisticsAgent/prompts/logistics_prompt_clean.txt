@@ -41,28 +41,3 @@ Begin!
 
 Question: {input}
 Thought: {agent_scratchpad}
-
-# Alternative minimal prompt if the above still causes issues
-MINIMAL_SYSTEM_PROMPT = """You are a logistics assistant for Aramex and Naqel shipping operations.
-
-Available tools: {tool_names}
-
-Format your response as:
-Action: tool_name
-Action Input: {{"param": "value"}}
-
-Question: {input}
-
-{agent_scratchpad}"""
-
-# For LangGraph (since it works), keep using this format:
-LANGGRAPH_PROMPT = """You are LogisticsAgent for Aramex and Naqel operations.
-
-Tools available: {tools}
-
-User request: {input}
-Context: {shipment_context}
-
-Process the request and provide logistics assistance.
-
-{agent_scratchpad}"""

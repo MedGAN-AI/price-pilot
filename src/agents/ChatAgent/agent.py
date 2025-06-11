@@ -1,36 +1,39 @@
+"""
+ChatAgent - Enhanced conversational agent using core framework
+Handles complex conversations, agent coordination, and delegation
+"""
 import os
-from typing import Any, Dict, TypedDict, Annotated, List
-
-# Load environment variables (e.g., GOOGLE_API_KEY)
-from dotenv import load_dotenv
-
-# LangChain imports
-from langchain.agents import AgentExecutor, create_structured_chat_agent
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from typing import Any, Dict, List
 from langchain_core.tools import Tool
-from langchain_google_genai import ChatGoogleGenerativeAI
 
-# LangGraph imports
-from langgraph.graph import START, END, StateGraph
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
-
-# ChatAgent will now use delegation tools instead of duplicate business logic tools
-from .tools.delegation_tools import delegation_tools
-from .tools.memory_tools import memory_tools, save_interaction
-
-load_dotenv()
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Must be set in your .env
-
-# Instantiate the Google generative AI LLM (Gemini)
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
-    temperature=0.0,
-    api_key=GOOGLE_API_KEY
+# Import core framework
+from src.core import (
+    build_agent, 
+    create_llm_from_config, 
+    AgentState, 
+    initialize_state, 
+    AgentType,
+    standardize_agent_config,
+    load_config,
+    create_agent_error_handler
 )
 
-# ChatAgent tools - delegation tools, memory tools, plus Final Answer
+# ChatAgent specific tools
+from src.agents.ChatAgent.tools.delegation_tools import delegation_tools
+from src.agents.ChatAgent.tools.memory_tools import memory_tools, save_interaction
+
+# Load and standardize configuration
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
+raw_config = load_config(CONFIG_PATH)
+config = standardize_agent_config(raw_config)
+
+# Create LLM using core framework
+llm = create_llm_from_config(config)
+
+# Initialize error handler
+error_handler = create_agent_error_handler("ChatAgent")
+
+# Setup tools - delegation tools, memory tools, plus Final Answer
 tools = delegation_tools + memory_tools + [
     Tool(
         name="Final Answer",
@@ -44,120 +47,141 @@ PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "chat_prompt.tx
 with open(PROMPT_PATH, "r", encoding="utf-8") as f:
     system_prompt = f.read()
 
-# Simplified human template
-human_template = """{input}
+# Build the ChatAgent using core framework
+agent_config = config.get("agent", {})
+specialized_config = config.get("specialized_config", {})
 
-{agent_scratchpad}"""
+build_config = {
+    "early_stopping_method": agent_config.get("early_stopping_method", "force"),
+    "max_execution_time": agent_config.get("max_execution_time", 60),
+    "delegation_enabled": specialized_config.get("delegation_enabled", True),
+    "memory_enabled": specialized_config.get("memory_enabled", True),
+    "context_key": specialized_config.get("context_key", "conversation_context")
+}
 
-# Setup the agent with tools
-prompt = ChatPromptTemplate.from_messages([
-    ("system", system_prompt),
-    MessagesPlaceholder(variable_name="chat_history", optional=True),
-    ("human", human_template),
-])
-
-# Create the structured chat agent
-agent = create_structured_chat_agent(llm, tools, prompt)
-
-# Wrap it in an AgentExecutor to handle intermediate steps
-agent_executor = AgentExecutor.from_agent_and_tools(
-    agent=agent,
+shopping_assistant = build_agent(
+    llm=llm,
     tools=tools,
-    verbose=True,
-    handle_parsing_errors=True,
-    max_iterations=10,
-    return_intermediate_steps=True
+    prompt_template=system_prompt,
+    max_iterations=agent_config.get("max_iterations", 10),
+    agent_type=AgentType.STRUCTURED_CHAT,
+    agent_config=build_config
 )
 
-# Define the shared state type for LangGraph
-class AgentState(TypedDict):
-    messages: Annotated[List[AnyMessage], add_messages]
-    intermediate_steps: List
-
-# Helper to initialize a fresh state
-def initialize_state() -> AgentState:
-    return {
-        "messages": [],
-        "intermediate_steps": []
-    }
-
-# "assistant" node: calls the AgentExecutor on the last user message
-def assistant(state: AgentState) -> Dict[str, Any]:
-    try:
-        # Extract the user's latest message content
-        user_message = state["messages"][-1].content
-        chat_history = state["messages"][:-1]
-
-        # Invoke the AgentExecutor
-        result = agent_executor.invoke({
-            "input": user_message,
-            "chat_history": chat_history
-        })
-
-        # Check if output is a dictionary with 'tool_input' key (happens with Final Answer)
-        content = result["output"]
-        if isinstance(content, dict) and "tool_input" in content:
-            content = content["tool_input"]
-
-        # Wrap the LLM's output as an AIMessage and carry forward any intermediate steps
+# Create wrapper class for easy testing and integration
+class ChatAgent:
+    """Enhanced ChatAgent using core framework"""
+    
+    def __init__(self):
+        self.graph = shopping_assistant
+        self.error_handler = error_handler
+        self.config = config
+    
+    def process_query(self, query: str, chat_history: List = None) -> str:
+        """Process a conversational query"""
+        try:
+            # Import required message types
+            from langchain_core.messages import HumanMessage
+            
+            # Initialize state with conversation context
+            state = initialize_state()
+            
+            # Add chat history if provided
+            if chat_history:
+                state["context"] = {"conversation_context": chat_history}
+            
+            # Add user message
+            state["messages"] = [HumanMessage(content=query)]
+            
+            # Invoke agent
+            result = self.graph.invoke(state)
+            
+            # Extract response
+            if result.get("messages"):
+                final_message = result["messages"][-1]
+                if hasattr(final_message, 'content'):
+                    response = final_message.content
+                elif isinstance(final_message, dict):
+                    response = final_message.get('content', 'No response')
+                else:
+                    response = str(final_message)
+                
+                # Save interaction for memory
+                save_interaction(query, response)
+                return response
+            
+            return 'No response generated'
+            
+        except Exception as e:
+            return self.error_handler.handle_llm_error(e)
+    
+    def get_conversation_summary(self) -> str:
+        """Get a summary of the current conversation"""
+        # This would integrate with memory tools
+        return "Conversation summary feature coming soon!"
+    
+    def reset_conversation(self):
+        """Reset conversation context"""
+        # This would clear conversation memory
+        pass
+    
+    def get_status(self) -> dict:
+        """Get agent status"""
         return {
-            "messages": [AIMessage(content=content)],
-            "intermediate_steps": result.get("intermediate_steps", [])
-        }
-    except Exception as e:
-        error_msg = f"I apologize, but I encountered an error: {str(e)}. Please try again or rephrase your request."
-        return {
-            "messages": [AIMessage(content=error_msg)],
-            "intermediate_steps": []
+            "agent_name": "ChatAgent",
+            "status": "active",
+            "tools_count": len(tools),
+            "config": self.config,
+            "framework_version": "core_v2"
         }
 
-# "tools" node: placeholder (AgentExecutor already ran the tool), just return state
-def tool_node(state: AgentState) -> Dict[str, Any]:
-    return state
+# Export the compiled graph and utilities for orchestrator
+__all__ = [
+    'shopping_assistant',
+    'initialize_state',
+    'AgentState',
+    'config',
+    'ChatAgent'
+]
 
-# Build the LangGraph StateGraph
-builder = StateGraph(AgentState)
-builder.add_node("assistant", assistant)
-builder.add_node("tools", tool_node)
+# Convenience function for direct invocation
+def run_chat_agent(message: str, chat_history: List = None) -> str:
+    """Simple interface for running ChatAgent"""
+    agent = ChatAgent()
+    return agent.process_query(message, chat_history)
 
-# If intermediate_steps is non-empty, go to the tools node; else, end
-builder.add_edge(START, "assistant")
-builder.add_conditional_edges(
-    "assistant",
-    lambda st: len(st["intermediate_steps"]) > 0,
-    {
-        True: "tools",
-        False: END
-    }
-)
-builder.add_edge("tools", "assistant")
-
-# Compile the graph
-shopping_assistant = builder.compile()
-
-# Allow running this file standalone for a quick test
+# Test interface when run directly
 if __name__ == "__main__":
-    # Test 1: run AgentExecutor directly
-    print("Testing AgentExecutor...")
-    try:
-        test_result = agent_executor.invoke({
-            "input": "What is the price of red Christmas decorations?"
-        })
-        print("AgentExecutor output:\n", test_result["output"])
-    except Exception as e:
-        print(f"AgentExecutor test failed: {e}")
-
-    # Test 2: run via LangGraph
-    print("\nTesting LangGraph...")
-    try:
-        initial_state = initialize_state()
-        # Seed with a SystemMessage + HumanMessage
-        initial_state["messages"] = [
-            SystemMessage(content="You are a helpful shopping assistant for a retail company."),
-            HumanMessage(content="What is the price of red Christmas decorations?")
-        ]
-        initial_state["intermediate_steps"] = []
-        response_state = shopping_assistant.invoke(initial_state)
-        print("LangGraph response:\n", response_state["messages"][-1].content)
-    except Exception as e:
-        print(f"LangGraph test failed: {e}")
+    print("🤖 ChatAgent Test Interface - Core Framework Version")
+    print("=" * 60)
+    
+    # Create agent instance
+    chat_agent = ChatAgent()
+    
+    print("Available capabilities:")
+    print("- Complex conversation handling")
+    print("- Agent delegation and coordination") 
+    print("- Memory and context management")
+    print("- Error handling and recovery")
+    print("\nTest queries:")
+    print("- 'What products do you have?'")
+    print("- 'I need to track my order'")
+    print("- 'Can you recommend something for me?'")
+    print("\nEnter 'quit' to exit\n")
+    
+    while True:
+        try:
+            user_input = input("You: ").strip()
+            if user_input.lower() in ['quit', 'exit', 'q']:
+                print("Goodbye! 👋")
+                break
+            
+            if user_input:
+                response = chat_agent.process_query(user_input)
+                print(f"ChatAgent: {response}\n")
+            
+        except KeyboardInterrupt:
+            print("\nGoodbye! 👋")
+            break
+        except Exception as e:
+            print(f"Error: {e}\n")

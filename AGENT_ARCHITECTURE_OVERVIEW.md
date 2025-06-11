@@ -1,50 +1,5 @@
 # 🏗️ Price Pilot Multi-Agent Architecture Overview
 
-## 📊 **Current Agent Graph Visualization**
-
-```mermaid
-graph TB
-    User[👤 User Input] --> Orchestrator{🎭 Orchestrator<br/>Intent Detection}
-    
-    %% Current Basic Routing
-    Orchestrator -->|"inventory"| InventoryAgent[📦 InventoryAgent]
-    Orchestrator -->|"recommend"| RecommendAgent[🎯 RecommendAgent]
-    Orchestrator -->|"forecast"| ForecastAgent[📈 ForecastAgent]
-    Orchestrator -->|"order"| OrderAgent[🛒 OrderAgent]
-    Orchestrator -->|"logistics"| LogisticsAgent[🚚 LogisticsAgent]
-    Orchestrator -->|"default/chat"| ChatAgent[💬 ChatAgent]
-    
-    %% Agent Internal Tools
-    InventoryAgent --> InventoryTools[🔧 Stock Check Tools<br/>• stock_by_sku_tool<br/>• stock_by_name_tool]
-    RecommendAgent --> RecommendTools[🔧 Recommendation Tools<br/>• recommend_tool<br/>• vector search]
-    ForecastAgent --> ForecastTools[🔧 Forecast Tools<br/>• forecast_with_arima_tool<br/>• demand prediction]
-    OrderAgent --> OrderTools[🔧 Order Tools<br/>• create_order_tool<br/>• check_order_status_tool<br/>• update_order_status_tool<br/>• cancel_order_tool]
-    LogisticsAgent --> LogisticsTools[🔧 Logistics Tools<br/>• tracking tools<br/>• pickup scheduling<br/>• carrier management<br/>• analytics tools]
-    ChatAgent --> ChatTools[🔧 Chat Tools<br/>• order_tool<br/>• recommend_tool<br/>• Final Answer]
-    
-    %% Data Layer
-    InventoryTools --> Database[(🗄️ Supabase<br/>Products, Inventory)]
-    OrderTools --> Database
-    RecommendTools --> Database
-    LogisticsTools --> Database
-    ChatTools --> Database
-    
-    %% External Integrations
-    LogisticsAgent --> Carriers[🚛 External Carriers<br/>Aramex, Naqel]
-    
-    %% Response Flow
-    InventoryAgent --> Response[📤 Response to User]
-    RecommendAgent --> Response
-    ForecastAgent --> Response
-    OrderAgent --> Response
-    LogisticsAgent --> Response
-    ChatAgent --> Response
-    
-    style Orchestrator fill:#ff9999
-    style ChatAgent fill:#99ccff
-    style Database fill:#99ff99
-    style Response fill:#ffcc99
-```
 
 ## 🎯 **Enhanced Target Architecture (Recommended)**
 

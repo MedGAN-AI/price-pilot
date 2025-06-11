@@ -77,6 +77,16 @@ class OrderAgent:
             else:
                 return str(final_message)
         return 'No response'
+    
+    def get_status(self) -> dict:
+        """Get agent status"""
+        return {
+            "agent_name": "OrderAgent",
+            "status": "active",
+            "tools_count": len(tools),
+            "config": config,
+            "framework_version": "core_v2"
+        }
 
 # Convenience function for direct invocation
 def run_order_agent(message: str) -> str:

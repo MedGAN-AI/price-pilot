@@ -5,7 +5,7 @@ Provides standardized error handling, validation, and user-friendly error messag
 import logging
 import traceback
 from enum import Enum
-from typing import Dict, Any, Optional, Union, List
+from typing import Dict, Any, Optional, Union, List, Callable
 from datetime import datetime
 
 class ErrorCode(Enum):
@@ -281,3 +281,73 @@ def safe_agent_execution(agent_name: str, operation: str):
                 }
         return wrapper
     return decorator
+
+class AgentErrorHandler:
+    """Enhanced error handler specifically for agent operations"""
+    
+    def __init__(self, agent_name: str, logger: Optional[logging.Logger] = None):
+        self.agent_name = agent_name
+        self.logger = logger or logging.getLogger(f"agent.{agent_name}")
+        self.error_handler = ErrorHandler(agent_name)
+    
+    def handle_llm_error(self, error: Exception, context: Optional[Dict] = None) -> str:
+        """Handle LLM-specific errors with user-friendly messages"""
+        error_str = str(error).lower()
+        
+        if "quota" in error_str or "rate limit" in error_str:
+            return "I'm experiencing high demand right now. Please try again in a moment."
+        elif "timeout" in error_str:
+            return "I'm taking longer than usual to respond. Please try again or simplify your request."
+        elif "api" in error_str or "connection" in error_str:
+            return "I'm having trouble connecting to my services. Please try again shortly."
+        else:
+            return "I encountered an issue processing your request. Please try rephrasing or contact support."
+    
+    def handle_tool_error(self, tool_name: str, error: Exception, context: Optional[Dict] = None) -> str:
+        """Handle tool execution errors"""
+        self.logger.error(f"Tool {tool_name} failed: {error}", extra=context)
+        
+        tool_messages = {
+            "create_order": "I couldn't process your order right now. Please try again or contact support.",
+            "check_stock": "I couldn't check inventory levels. The system might be updating. Please try again.",
+            "track_shipment": "I couldn't track your shipment right now. Please verify the tracking number and try again.",
+            "recommend": "I couldn't generate recommendations right now. Please try a different search.",
+            "forecast": "I couldn't generate a forecast right now. The analysis system might be busy."
+        }
+        
+        return tool_messages.get(tool_name, f"I couldn't complete the {tool_name} operation. Please try again.")
+    
+    def handle_validation_error(self, field: str, value: Any, expected: str) -> str:
+        """Handle validation errors with specific guidance"""
+        return f"The {field} '{value}' doesn't look right. Please provide {expected}."
+    
+    def wrap_agent_function(self, func: Callable, operation_name: str):
+        """Decorator to wrap agent functions with error handling"""
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                self.logger.error(f"Agent {self.agent_name} failed during {operation_name}: {e}")
+                return self._get_fallback_response(operation_name, e)
+        return wrapper
+    
+    def _get_fallback_response(self, operation: str, error: Exception) -> Dict[str, Any]:
+        """Generate fallback response for agent operations"""
+        user_message = self.handle_llm_error(error)
+        
+        return {
+            "messages": [{"type": "ai", "content": user_message}],
+            "intermediate_steps": [],
+            "context": {},
+            "user_preferences": {},
+            "active_operations": [],
+            "error": {
+                "operation": operation,
+                "timestamp": datetime.now().isoformat(),
+                "recoverable": True
+            }
+        }
+
+def create_agent_error_handler(agent_name: str) -> AgentErrorHandler:
+    """Factory function to create error handlers for agents"""
+    return AgentErrorHandler(agent_name)

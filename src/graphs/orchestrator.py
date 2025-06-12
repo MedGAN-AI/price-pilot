@@ -26,7 +26,7 @@ def detect_intent(text: str) -> Dict[str, Any]:
     intent_keywords = {
         "inventory": ["stock", "inventory", "available", "units", "in stock", "quantity", "how many"],
         "recommend": ["recommend", "suggest", "find", "looking for", "need", "want", "show me", "similar"],
-        "order": ["order", "buy", "purchase", "place order", "checkout", "cart", "add to cart"],
+        "order": ["order", "buy", "purchase", "place order", "checkout", "cart", "add to cart", "SHOES-", "TSHIRT-", "HAT-", "SOCKS-"],
         "logistics": ["track", "shipping", "delivery", "shipment", "where is", "when will", "arrive"],
         "forecast": ["forecast", "predict", "future", "trend", "projection", "demand", "sales"]
     }
@@ -38,7 +38,7 @@ def detect_intent(text: str) -> Dict[str, Any]:
     for intent, keywords in intent_keywords.items():
         score = 0
         for keyword in keywords:
-            if keyword in lower_text:
+            if keyword.lower() in lower_text:
                 score += 1
         
         if score > 0:
@@ -78,13 +78,38 @@ def intent_router(state: OrchestrationState) -> OrchestrationState:
     last_msg = state["messages"][-1].content
     intent_result = detect_intent(last_msg)
     
-    # Build user context
-    user_context = {
+    # Retrieve existing context
+    user_context = state.get("user_context", {})
+    
+    # Look for email addresses in the message
+    import re
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    email_matches = re.findall(email_pattern, last_msg)
+    if email_matches:
+        user_context["email"] = email_matches[0]
+    
+    # Look for product SKUs in the message
+    sku_pattern = r'([A-Z]+-[A-Z]+-\d{3})'
+    sku_matches = re.findall(sku_pattern, last_msg)
+    if sku_matches:
+        user_context["product_sku"] = sku_matches[0]
+        # If SKU is found, this is likely an order intent
+        intent_result["intent"] = "order"
+        intent_result["confidence"] = max(intent_result["confidence"], 0.7)
+    
+    # Look for quantities in the message
+    quantity_pattern = r'\b(\d+)\b'
+    quantity_matches = re.findall(quantity_pattern, last_msg)
+    if quantity_matches and "product_sku" in user_context:
+        user_context["quantity"] = quantity_matches[0]
+    
+    # Update user context with current query and session info
+    user_context.update({
         "current_query": last_msg,
         "timestamp": datetime.now().isoformat(),
-        "session_id": "session_" + str(hash(last_msg))[:8],
+        "session_id": user_context.get("session_id", "session_" + str(hash(last_msg))[:8]),
         "query_length": len(last_msg),
-    }
+    })
     
     # Update conversation history
     conversation_history = state.get("conversation_history", [])
@@ -106,28 +131,49 @@ def intent_router(state: OrchestrationState) -> OrchestrationState:
 
 def dispatch(state: OrchestrationState) -> OrchestrationState:
     """
-    Enhanced dispatch - ALL requests go to ChatAgent for coordination
-    ChatAgent will delegate to specialized agents as needed
+    Enhanced dispatch - Routes requests to appropriate specialized agents based on detected intent
     """
     try:
-        # ALL requests go to ChatAgent - it will handle delegation
-        subgraph = shopping_assistant
-        agent_name = "ChatAgent"
+        # Select agent based on intent
+        intent = state.get("intent", "chat")
+        confidence = state.get("confidence", 0.5)
+        
+        # Map intents to agent graphs
+        agent_map = {
+            "chat": shopping_assistant,
+            "inventory": inventory_assistant,
+            "recommend": recommend_assistant,
+            "forecast": forecast_assistant,
+            "logistics": logistics_assistant,
+            "order": order_agent_graph
+        }
+        
+        # Select appropriate agent based on intent
+        subgraph = agent_map.get(intent, shopping_assistant)
+        agent_name = intent.capitalize() + "Agent"
+        
+        # Log which agent is handling the request (for debugging)
+        print(f"DEBUG: Routing to {agent_name} with confidence {confidence}")
         
         # Prepare sub-state with full context
         sub_state = {
             "messages": state["messages"],
-            "intermediate_steps": []
+            "intermediate_steps": [],
+            # Pass intent and other context to the agent
+            "intent": intent,
+            "confidence": confidence,
+            "user_context": state.get("user_context", {})
         }
         
         # Invoke selected agent
         result = subgraph.invoke(sub_state)
-          # Return enhanced state with preserved context
+        
+        # Return enhanced state with preserved context
         return {
             "messages": result["messages"],
             "intermediate_steps": [],
-            "intent": state.get("intent", "chat"),
-            "confidence": state.get("confidence", 0.5),
+            "intent": intent,
+            "confidence": confidence,
             "user_context": state["user_context"],
             "conversation_history": state["conversation_history"]
         }

@@ -476,9 +476,11 @@ def update_delivery_estimate_func(tracking_number: str, new_estimate: str, reaso
             "message": f"Failed to update delivery estimate: {str(e)}"
         })
 
-def get_shipment_analytics_func() -> str:
+def get_shipment_analytics_func(input_data: dict = None) -> str:
     """
     Get analytics and insights from monitored shipments
+    Args:
+        input_data: Optional input data (unused but required for LangChain tool compatibility)
     """
     try:
         monitor = get_status_monitor()
@@ -512,6 +514,13 @@ def get_shipment_analytics_func() -> str:
             "status": "error",
             "message": f"Failed to get analytics: {str(e)}"
         })
+
+# And update the tool creation:
+get_analytics_tool = Tool(
+    name="get_shipment_analytics",
+    description="Get analytics and insights from all monitored shipments including performance metrics and trends.",
+    func=lambda x: get_shipment_analytics_func(json.loads(x) if x else {})
+)
 
 # Create LangChain tools
 def create_logistics_tools() -> List[Tool]:
@@ -602,17 +611,72 @@ def format_tracking_response(tracking_data: Dict[str, Any]) -> str:
 [NUMBER] Tracking Number: {tracking_data.get('tracking_number', 'Unknown')}
 """
 
+def serialize_object(obj):
+    """
+    Safely serialize objects for JSON output, handling non-serializable types
+    """
+    if hasattr(obj, '__dict__'):
+        return {k: serialize_object(v) for k, v in obj.__dict__.items() 
+                if not k.startswith('_') and not callable(v)}
+    elif isinstance(obj, (list, tuple)):
+        return [serialize_object(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {k: serialize_object(v) for k, v in obj.items() 
+                if not callable(v)}
+    elif isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    elif hasattr(obj, 'isoformat'):  # datetime objects
+        return obj.isoformat()
+    else:
+        # For non-serializable objects, return their string representation
+        return str(obj)
+
 def get_monitor_info() -> Dict[str, Any]:
     """Get information about the monitoring system"""
     try:
         monitor = get_status_monitor()
-        return {
+        
+        # Get basic information safely
+        info = {
             "available_methods": [method for method in dir(monitor) if not method.startswith('_')],
-            "active_monitors": getattr(monitor, 'get_active_monitors', lambda: [])(),
-            "monitoring_active": getattr(monitor, 'monitoring_active', False)
+            "monitor_type": type(monitor).__name__
         }
+        
+        # Try to get active monitors safely
+        try:
+            if hasattr(monitor, 'get_active_monitors'):
+                active_monitors = monitor.get_active_monitors()
+                if active_monitors:
+                    # Serialize the monitors safely
+                    info["active_monitors"] = serialize_object(active_monitors)
+                    info["active_monitors_count"] = len(active_monitors)
+                else:
+                    info["active_monitors"] = []
+                    info["active_monitors_count"] = 0
+        except Exception as e:
+            info["active_monitors_error"] = str(e)
+        
+        # Try to get monitoring status safely
+        try:
+            if hasattr(monitor, 'monitoring_active'):
+                info["monitoring_active"] = bool(monitor.monitoring_active)
+        except Exception as e:
+            info["monitoring_status_error"] = str(e)
+        
+        # Try to get any other safe attributes
+        safe_attributes = ['running', 'enabled', 'status', 'config']
+        for attr in safe_attributes:
+            try:
+                if hasattr(monitor, attr):
+                    value = getattr(monitor, attr)
+                    info[attr] = serialize_object(value)
+            except Exception as e:
+                info[f"{attr}_error"] = str(e)
+        
+        return info
+        
     except Exception as e:
-        return {"error": str(e)}
+        return {"error": str(e), "error_type": type(e).__name__}
 
 if __name__ == "__main__":
     # Test the tools
@@ -624,4 +688,10 @@ if __name__ == "__main__":
     # Display monitor info for debugging
     print("\nMonitor System Info:")
     monitor_info = get_monitor_info()
-    print(json.dumps(monitor_info, indent=2))
+    try:
+        print(json.dumps(monitor_info, indent=2))
+    except Exception as e:
+        print(f"Error serializing monitor info: {e}")
+        # Fallback: print the dict directly
+        for key, value in monitor_info.items():
+            print(f"  {key}: {value}")

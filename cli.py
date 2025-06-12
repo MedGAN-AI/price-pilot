@@ -540,7 +540,7 @@ class PricePilotCLI:
         """Export conversation history and statistics"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"price_pilot_session_{timestamp}.json"
+            filename = f"logs/price_pilot_session_{timestamp}.json"
             
             export_data = {
                 "session_info": {

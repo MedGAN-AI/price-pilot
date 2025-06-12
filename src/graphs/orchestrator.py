@@ -1,10 +1,15 @@
 """
-Enhanced Production Orchestrator for Price Pilot
-Multi-agent coordination with confidence scoring and context management
+Optimized Production Orchestrator for Price Pilot
+Enhanced multi-agent coordination with advanced intent detection, 
+context management, and performance optimizations
 """
 import os
-from typing import Any, Dict, TypedDict, Annotated, List
-from datetime import datetime
+import re
+import asyncio
+from typing import Any, Dict, TypedDict, Annotated, List, Optional, Tuple
+from datetime import datetime, timedelta
+from collections import defaultdict, deque
+import logging
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -18,40 +23,217 @@ from src.agents.ForecastAgent.agent import forecast_assistant
 from src.agents.LogisticsAgent.agent import logistics_assistant
 from src.agents.OrderAgent.agent import order_agent_graph
 
-def detect_intent(text: str) -> Dict[str, Any]:
-    """
-    Enhanced intent detection with confidence scoring
-    Returns both intent and confidence level
-    """
-    intent_keywords = {
-        "inventory": ["stock", "inventory", "available", "units", "in stock", "quantity", "how many"],
-        "recommend": ["recommend", "suggest", "find", "looking for", "need", "want", "show me", "similar"],
-        "order": ["order", "buy", "purchase", "place order", "checkout", "cart", "add to cart", "SHOES-", "TSHIRT-", "HAT-", "SOCKS-"],
-        "logistics": ["track", "shipping", "delivery", "shipment", "where is", "when will", "arrive"],
-        "forecast": ["forecast", "predict", "future", "trend", "projection", "demand", "sales"]
-    }
-    
-    lower_text = text.lower()
-    scores = {}
-    
-    # Calculate scores for each intent
-    for intent, keywords in intent_keywords.items():
-        score = 0
-        for keyword in keywords:
-            if keyword.lower() in lower_text:
-                score += 1
-        
-        if score > 0:
-            scores[intent] = score / len(keywords)  # Normalize by keyword count
-    
-    if scores:
-        best_intent = max(scores, key=scores.get)
-        confidence = min(scores[best_intent] * 2, 1.0)  # Scale confidence
-        return {"intent": best_intent, "confidence": confidence}
-    else:
-        return {"intent": "chat", "confidence": 0.5}
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Enhanced state with better context management
+class IntentDetector:
+    """Advanced intent detection with machine learning-like scoring"""
+    
+    def __init__(self):
+        # Enhanced keyword patterns with weights
+        self.intent_patterns = {
+            "inventory": {
+                "primary": ["stock", "inventory", "available", "in stock", "quantity"],
+                "secondary": ["how many", "units", "left", "remaining", "supply"],
+                "context": ["check", "show", "tell me", "display"],
+                "weight": 1.0
+            },
+            "recommend": {
+                "primary": ["recommend", "suggest", "find", "looking for", "need"],
+                "secondary": ["want", "show me", "similar", "like", "best", "good"],
+                "context": ["help me", "what", "which", "any"],
+                "weight": 1.0
+            },
+            "order": {
+                "primary": ["order", "buy", "purchase", "place order", "checkout"],
+                "secondary": ["cart", "add to cart", "get", "take"],
+                "context": ["SHOES-", "TSHIRT-", "HAT-", "SOCKS-", "product"],
+                "weight": 1.2  # Higher weight for transactional intent
+            },
+            "logistics": {
+                "primary": ["track", "shipping", "delivery", "shipment"],
+                "secondary": ["where is", "when will", "arrive", "status"],
+                "context": ["my order", "package", "tracking"],
+                "weight": 1.1
+            },
+            "forecast": {
+                "primary": ["forecast", "predict", "future", "trend"],
+                "secondary": ["projection", "demand", "sales", "analytics"],
+                "context": ["what will", "expected", "anticipated"],
+                "weight": 0.9
+            }
+        }
+        
+        # Cache for performance
+        self._intent_cache = {}
+        self._cache_expiry = {}
+        self.cache_ttl = timedelta(minutes=5)
+    
+    def detect_intent(self, text: str) -> Dict[str, Any]:
+        """
+        Advanced intent detection with caching and contextual scoring
+        """
+        # Check cache first
+        cache_key = hash(text.lower().strip())
+        if (cache_key in self._intent_cache and 
+            datetime.now() - self._cache_expiry.get(cache_key, datetime.min) < self.cache_ttl):
+            return self._intent_cache[cache_key]
+        
+        lower_text = text.lower()
+        scores = {}
+        
+        # Advanced scoring algorithm
+        for intent, patterns in self.intent_patterns.items():
+            score = 0.0
+            
+            # Primary keywords (high weight)
+            for keyword in patterns["primary"]:
+                if keyword in lower_text:
+                    score += 3.0
+                elif self._fuzzy_match(keyword, lower_text):
+                    score += 2.0
+            
+            # Secondary keywords (medium weight)
+            for keyword in patterns["secondary"]:
+                if keyword in lower_text:
+                    score += 2.0
+                elif self._fuzzy_match(keyword, lower_text):
+                    score += 1.0
+            
+            # Context keywords (low weight but important)
+            for keyword in patterns["context"]:
+                if keyword in lower_text:
+                    score += 1.0
+            
+            # Apply intent weight
+            score *= patterns["weight"]
+            
+            # Length penalty for very short queries
+            if len(text.strip()) < 5:
+                score *= 0.8
+            
+            # Boost for complete phrases
+            if any(phrase in lower_text for phrase in patterns["primary"]):
+                score *= 1.2
+            
+            if score > 0:
+                scores[intent] = score
+        
+        # Determine best intent with confidence
+        if scores:
+            best_intent = max(scores, key=scores.get)
+            max_score = scores[best_intent]
+            total_score = sum(scores.values())
+            
+            # Calculate confidence with better normalization
+            confidence = min(max_score / (total_score + 1), 0.95)
+            
+            # Boost confidence if intent is clearly dominant
+            if max_score > sum(v for k, v in scores.items() if k != best_intent):
+                confidence = min(confidence * 1.3, 0.95)
+        else:
+            best_intent = "chat"
+            confidence = 0.5
+        
+        result = {
+            "intent": best_intent,
+            "confidence": confidence,
+            "all_scores": scores,
+            "detected_entities": self._extract_entities(text)
+        }
+        
+        # Cache the result
+        self._intent_cache[cache_key] = result
+        self._cache_expiry[cache_key] = datetime.now()
+        
+        return result
+    
+    def _fuzzy_match(self, keyword: str, text: str, threshold: float = 0.8) -> bool:
+        """Simple fuzzy matching for typos"""
+        for word in text.split():
+            if len(word) >= 3 and keyword in word:
+                return True
+        return False
+    
+    def _extract_entities(self, text: str) -> Dict[str, List[str]]:
+        """Extract entities like product codes, numbers, etc."""
+        entities = {
+            "product_codes": re.findall(r'[A-Z]+-\w+', text),
+            "numbers": re.findall(r'\b\d+\b', text),
+            "emails": re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
+        }
+        return {k: v for k, v in entities.items() if v}
+
+class ContextManager:
+    """Advanced context management for better conversation flow"""
+    
+    def __init__(self, max_history: int = 50):
+        self.max_history = max_history
+        self.conversation_patterns = defaultdict(int)
+        self.user_preferences = defaultdict(dict)
+        self.session_data = {}
+    
+    def update_context(self, state: Dict[str, Any], query: str, intent_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Update and enrich user context"""
+        session_id = self._get_session_id(query)
+        
+        # Build comprehensive context
+        context = {
+            "current_query": query,
+            "timestamp": datetime.now().isoformat(),
+            "session_id": session_id,
+            "query_length": len(query),
+            "query_complexity": self._assess_complexity(query),
+            "detected_entities": intent_result.get("detected_entities", {}),
+            "intent_confidence": intent_result.get("confidence", 0.0),
+            "conversation_turn": len(state.get("conversation_history", [])) + 1
+        }
+        
+        # Track conversation patterns
+        intent = intent_result["intent"]
+        self.conversation_patterns[intent] += 1
+        context["intent_frequency"] = dict(self.conversation_patterns)
+        
+        # Add session continuity
+        if session_id in self.session_data:
+            context["previous_intents"] = self.session_data[session_id].get("intents", [])[-5:]
+            context["session_duration"] = (
+                datetime.now() - 
+                datetime.fromisoformat(self.session_data[session_id]["start_time"])
+            ).total_seconds()
+        else:
+            self.session_data[session_id] = {
+                "start_time": datetime.now().isoformat(),
+                "intents": []
+            }
+            context["previous_intents"] = []
+            context["session_duration"] = 0
+        
+        # Update session data
+        self.session_data[session_id]["intents"].append({
+            "intent": intent,
+            "timestamp": context["timestamp"],
+            "confidence": intent_result["confidence"]
+        })
+        
+        return context
+    
+    def _get_session_id(self, query: str) -> str:
+        """Generate or retrieve session ID"""
+        return f"session_{hash(query[:50])}_{datetime.now().strftime('%Y%m%d')}"[:16]
+    
+    def _assess_complexity(self, query: str) -> float:
+        """Assess query complexity for better routing"""
+        complexity_factors = [
+            len(query.split()) / 20,  # Word count
+            len(re.findall(r'[?!]', query)) * 0.1,  # Question marks/exclamations
+            len(re.findall(r'\band\b|\bor\b', query.lower())) * 0.2,  # Conjunctions
+            len(re.findall(r'\d+', query)) * 0.1,  # Numbers
+        ]
+        return min(sum(complexity_factors), 1.0)
+
+# Enhanced state with performance tracking
 class OrchestrationState(TypedDict):
     messages: Annotated[List[Any], add_messages]
     intermediate_steps: List[Any]
@@ -59,86 +241,99 @@ class OrchestrationState(TypedDict):
     confidence: float
     user_context: Dict[str, Any]
     conversation_history: List[Dict]
+    performance_metrics: Dict[str, Any]
+    agent_selection_reason: str
+
+# Initialize components
+intent_detector = IntentDetector()
+context_manager = ContextManager()
 
 def initialize_state() -> OrchestrationState:
+    """Initialize state with performance tracking"""
     return {
         "messages": [], 
         "intermediate_steps": [], 
         "intent": "",
         "confidence": 0.0,
         "user_context": {},
-        "conversation_history": []
+        "conversation_history": [],
+        "performance_metrics": {
+            "start_time": datetime.now().isoformat(),
+            "processing_steps": []
+        },
+        "agent_selection_reason": ""
     }
-    return {"messages": [], "intermediate_steps": [], "intent": ""}
 
 def intent_router(state: OrchestrationState) -> OrchestrationState:
     """
-    Enhanced intent router with confidence and context tracking
+    Optimized intent router with advanced detection and context management
     """
-    last_msg = state["messages"][-1].content
-    intent_result = detect_intent(last_msg)
+    start_time = datetime.now()
     
-    # Retrieve existing context
-    user_context = state.get("user_context", {})
-    
-    # Look for email addresses in the message
-    import re
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    email_matches = re.findall(email_pattern, last_msg)
-    if email_matches:
-        user_context["email"] = email_matches[0]
-    
-    # Look for product SKUs in the message
-    sku_pattern = r'([A-Z]+-[A-Z]+-\d{3})'
-    sku_matches = re.findall(sku_pattern, last_msg)
-    if sku_matches:
-        user_context["product_sku"] = sku_matches[0]
-        # If SKU is found, this is likely an order intent
-        intent_result["intent"] = "order"
-        intent_result["confidence"] = max(intent_result["confidence"], 0.7)
-    
-    # Look for quantities in the message
-    quantity_pattern = r'\b(\d+)\b'
-    quantity_matches = re.findall(quantity_pattern, last_msg)
-    if quantity_matches and "product_sku" in user_context:
-        user_context["quantity"] = quantity_matches[0]
-    
-    # Update user context with current query and session info
-    user_context.update({
-        "current_query": last_msg,
-        "timestamp": datetime.now().isoformat(),
-        "session_id": user_context.get("session_id", "session_" + str(hash(last_msg))[:8]),
-        "query_length": len(last_msg),
-    })
-    
-    # Update conversation history
-    conversation_history = state.get("conversation_history", [])
-    conversation_history.append({
-        "query": last_msg,
-        "intent": intent_result["intent"],
-        "confidence": intent_result["confidence"],
-        "timestamp": user_context["timestamp"]
-    })
-    
-    return {
-        "messages": state["messages"],
-        "intermediate_steps": [],
-        "intent": intent_result["intent"],
-        "confidence": intent_result["confidence"],
-        "user_context": user_context,
-        "conversation_history": conversation_history[-10:]  # Keep last 10
-    }
-
-def dispatch(state: OrchestrationState) -> OrchestrationState:
-    """
-    Enhanced dispatch - Routes requests to appropriate specialized agents based on detected intent
-    """
     try:
-        # Select agent based on intent
+        last_msg = state["messages"][-1].content
+        
+        # Advanced intent detection
+        intent_result = intent_detector.detect_intent(last_msg)
+        
+        # Enhanced context management
+        user_context = context_manager.update_context(state, last_msg, intent_result)
+        
+        # Update conversation history with enriched data
+        conversation_history = state.get("conversation_history", [])
+        conversation_entry = {
+            "query": last_msg,
+            "intent": intent_result["intent"],
+            "confidence": intent_result["confidence"],
+            "timestamp": user_context["timestamp"],
+            "entities": intent_result.get("detected_entities", {}),
+            "complexity": user_context.get("query_complexity", 0.0)
+        }
+        conversation_history.append(conversation_entry)
+        
+        # Performance tracking
+        processing_time = (datetime.now() - start_time).total_seconds()
+        performance_metrics = state.get("performance_metrics", {})
+        performance_metrics["processing_steps"].append({
+            "step": "intent_routing",
+            "duration": processing_time,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        logger.info(f"Intent detected: {intent_result['intent']} (confidence: {intent_result['confidence']:.2f})")
+        
+        return {
+            "messages": state["messages"],
+            "intermediate_steps": [],
+            "intent": intent_result["intent"],
+            "confidence": intent_result["confidence"],
+            "user_context": user_context,
+            "conversation_history": conversation_history[-context_manager.max_history:],
+            "performance_metrics": performance_metrics,
+            "agent_selection_reason": f"Intent '{intent_result['intent']}' detected with {intent_result['confidence']:.1%} confidence"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in intent routing: {e}")
+        return {
+            **state,
+            "intent": "chat",
+            "confidence": 0.3,
+            "agent_selection_reason": f"Fallback to chat due to routing error: {str(e)}"
+        }
+
+def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
+    """
+    Intelligent dispatch with performance optimization and fallback handling
+    """
+    start_time = datetime.now()
+    
+    try:
         intent = state.get("intent", "chat")
         confidence = state.get("confidence", 0.5)
+        user_context = state.get("user_context", {})
         
-        # Map intents to agent graphs
+        # Enhanced agent selection with fallback logic
         agent_map = {
             "chat": shopping_assistant,
             "inventory": inventory_assistant,
@@ -148,56 +343,151 @@ def dispatch(state: OrchestrationState) -> OrchestrationState:
             "order": order_agent_graph
         }
         
-        # Select appropriate agent based on intent
-        subgraph = agent_map.get(intent, shopping_assistant)
+        # Smart agent selection based on confidence and context
+        selected_agent = agent_map.get(intent, shopping_assistant)
         agent_name = intent.capitalize() + "Agent"
         
-        # Log which agent is handling the request (for debugging)
-        print(f"DEBUG: Routing to {agent_name} with confidence {confidence}")
+        # Low confidence fallback logic
+        if confidence < 0.4:
+            # Use conversation history to make better decision
+            recent_intents = [
+                h.get("intent", "chat") 
+                for h in state.get("conversation_history", [])[-3:]
+            ]
+            
+            if recent_intents:
+                # Use most common recent intent if confidence is low
+                from collections import Counter
+                common_intent = Counter(recent_intents).most_common(1)[0][0]
+                if common_intent != "chat":
+                    selected_agent = agent_map.get(common_intent, shopping_assistant)
+                    agent_name = common_intent.capitalize() + "Agent"
+                    logger.info(f"Low confidence fallback: using {agent_name} based on conversation history")
         
-        # Prepare sub-state with full context
+        # Log agent selection
+        logger.info(f"Dispatching to {agent_name} (confidence: {confidence:.2f})")
+        
+        # Prepare enhanced sub-state
         sub_state = {
             "messages": state["messages"],
             "intermediate_steps": [],
-            # Pass intent and other context to the agent
             "intent": intent,
             "confidence": confidence,
-            "user_context": state.get("user_context", {})
+            "user_context": user_context
         }
         
-        # Invoke selected agent
-        result = subgraph.invoke(sub_state)
+        # Invoke selected agent with error handling
+        try:
+            result = selected_agent.invoke(sub_state)
+        except Exception as agent_error:
+            logger.error(f"Agent {agent_name} failed: {agent_error}")
+            # Fallback to chat agent
+            result = shopping_assistant.invoke(sub_state)
+            agent_name = "ChatAgent (fallback)"
         
-        # Return enhanced state with preserved context
+        # Performance tracking
+        processing_time = (datetime.now() - start_time).total_seconds()
+        performance_metrics = state.get("performance_metrics", {})
+        performance_metrics["processing_steps"].append({
+            "step": f"agent_dispatch_{agent_name}",
+            "duration": processing_time,
+            "timestamp": datetime.now().isoformat()
+        })
+        performance_metrics["total_duration"] = sum(
+            step["duration"] for step in performance_metrics["processing_steps"]
+        )
+        
         return {
             "messages": result["messages"],
             "intermediate_steps": [],
             "intent": intent,
             "confidence": confidence,
-            "user_context": state["user_context"],
-            "conversation_history": state["conversation_history"]
+            "user_context": user_context,
+            "conversation_history": state["conversation_history"],
+            "performance_metrics": performance_metrics,
+            "agent_selection_reason": f"Processed by {agent_name}"
         }
         
     except Exception as e:
-        error_response = f"❌ I encountered an error while processing your request: {str(e)}\n\nPlease try rephrasing your question."
+        logger.error(f"Critical error in dispatch: {e}")
+        
+        # Emergency fallback
+        error_message = (
+            "I apologize, but I'm experiencing some technical difficulties. "
+            "Let me try to help you in a different way. Could you please rephrase your question?"
+        )
         
         return {
-            "messages": [AIMessage(content=error_response)],
+            "messages": [AIMessage(content=error_message)],
             "intermediate_steps": [],
             "intent": "error",
             "confidence": 0.0,
             "user_context": state.get("user_context", {}),
-            "conversation_history": state.get("conversation_history", [])
+            "conversation_history": state.get("conversation_history", []),
+            "performance_metrics": state.get("performance_metrics", {}),
+            "agent_selection_reason": f"Emergency fallback due to critical error: {str(e)}"
         }
 
-# Build the orchestration graph
+# Build the optimized orchestration graph
 builder = StateGraph(OrchestrationState)
 builder.add_node("intent_router", intent_router)
-builder.add_node("dispatch", dispatch)
+builder.add_node("smart_dispatch", smart_dispatch)
 
 builder.add_edge(START, "intent_router")
-builder.add_edge("intent_router", "dispatch")
-builder.add_edge("dispatch", END)
+builder.add_edge("intent_router", "smart_dispatch")
+builder.add_edge("smart_dispatch", END)
 
-# Compile once
+# Compile the optimized orchestrator
 orchestrator = builder.compile()
+
+# Performance monitoring utilities
+class PerformanceMonitor:
+    """Monitor and log orchestrator performance"""
+    
+    def __init__(self):
+        self.metrics = deque(maxlen=1000)  # Keep last 1000 requests
+    
+    def log_request(self, state: OrchestrationState):
+        """Log request metrics"""
+        metrics = state.get("performance_metrics", {})
+        if metrics:
+            self.metrics.append({
+                "timestamp": datetime.now().isoformat(),
+                "intent": state.get("intent", "unknown"),
+                "confidence": state.get("confidence", 0.0),
+                "total_duration": metrics.get("total_duration", 0.0),
+                "steps": len(metrics.get("processing_steps", []))
+            })
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get performance statistics"""
+        if not self.metrics:
+            return {"status": "No metrics available"}
+        
+        durations = [m["total_duration"] for m in self.metrics if "total_duration" in m]
+        intents = [m["intent"] for m in self.metrics]
+        
+        from collections import Counter
+        
+        return {
+            "total_requests": len(self.metrics),
+            "avg_response_time": sum(durations) / len(durations) if durations else 0,
+            "max_response_time": max(durations) if durations else 0,
+            "intent_distribution": dict(Counter(intents)),
+            "requests_last_hour": len([
+                m for m in self.metrics 
+                if datetime.now() - datetime.fromisoformat(m["timestamp"]) < timedelta(hours=1)
+            ])
+        }
+
+# Global performance monitor
+performance_monitor = PerformanceMonitor()
+
+def monitored_invoke(state: OrchestrationState) -> OrchestrationState:
+    """Wrapper to monitor orchestrator performance"""
+    result = orchestrator.invoke(state)
+    performance_monitor.log_request(result)
+    return result
+
+# Export the monitored version
+__all__ = ["orchestrator", "initialize_state", "performance_monitor", "monitored_invoke"]

@@ -1,0 +1,256 @@
+{
+  "session_info": {
+    "start_time": "2025-06-12T12:04:00.967717",
+    "export_time": "2025-06-12T12:07:15.936068",
+    "total_queries": 5,
+    "average_response_time": 5.665925645828247
+  },
+  "conversation_history": [
+    {
+      "query": "hi",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T12:04:50.453924",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000307,
+            "timestamp": "2025-06-12T12:04:50.476265"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 12.031193,
+            "timestamp": "2025-06-12T12:05:02.507901"
+          }
+        ],
+        "total_duration": 12.0315
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-12T12:04:50.476179",
+        "session_id": "session_86811912",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T12:05:02.508063"
+    },
+    {
+      "query": "i want to buy gift for some one can you recommed me",
+      "response": "Here are our available products:\n\n*   Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n*   Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n*   White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n*   Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n*   Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n*   Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.7672131147540984,
+      "agent_used": "Processed by OrderAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T12:05:28.165567",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000146,
+            "timestamp": "2025-06-12T12:05:28.166880"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 3.044701,
+            "timestamp": "2025-06-12T12:05:31.212526"
+          }
+        ],
+        "total_duration": 3.044847
+      },
+      "user_context": {
+        "current_query": "i want to buy gift for some one can you recommed me",
+        "timestamp": "2025-06-12T12:05:28.166852",
+        "session_id": "session_-3448925",
+        "query_length": 51,
+        "query_complexity": 0.6,
+        "detected_entities": {},
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T12:05:31.212661"
+    },
+    {
+      "query": "HAT-GRN-005, 5, mohammedzaloomai@gmail.com",
+      "response": "Hi Mohammed, we have 14 units of the Green Baseball Cap (HAT-GRN-005) in stock. You requested to check the stock for 5 units. Is there anything else I can help you with?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T12:06:17.470463",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 9.7e-05,
+            "timestamp": "2025-06-12T12:06:17.471721"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 9.324337,
+            "timestamp": "2025-06-12T12:06:26.796450"
+          }
+        ],
+        "total_duration": 9.324434
+      },
+      "user_context": {
+        "current_query": "HAT-GRN-005, 5, mohammedzaloomai@gmail.com",
+        "timestamp": "2025-06-12T12:06:17.471701",
+        "session_id": "session_71090651",
+        "query_length": 42,
+        "query_complexity": 0.35,
+        "detected_entities": {
+          "product_codes": [
+            "HAT-GRN"
+          ],
+          "numbers": [
+            "005",
+            "5"
+          ],
+          "emails": [
+            "mohammedzaloomai@gmail.com"
+          ]
+        },
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T12:06:26.796586"
+    },
+    {
+      "query": "i want to order HAT-GRN-005",
+      "response": "Here are our available products:\n\n• Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n• Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n• White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n• Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n• Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n• Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.7672131147540984,
+      "agent_used": "Processed by OrderAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T12:06:56.583757",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000123,
+            "timestamp": "2025-06-12T12:06:56.585576"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 3.128678,
+            "timestamp": "2025-06-12T12:06:59.714688"
+          }
+        ],
+        "total_duration": 3.1288009999999997
+      },
+      "user_context": {
+        "current_query": "i want to order HAT-GRN-005",
+        "timestamp": "2025-06-12T12:06:56.585555",
+        "session_id": "session_63902153",
+        "query_length": 27,
+        "query_complexity": 0.35,
+        "detected_entities": {
+          "product_codes": [
+            "HAT-GRN"
+          ],
+          "numbers": [
+            "005"
+          ]
+        },
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2,
+          "order": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T12:06:59.714819"
+    },
+    {
+      "query": "HAT-GRN-005",
+      "response": "Good morning! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T12:07:10.066980",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 6.3e-05,
+            "timestamp": "2025-06-12T12:07:10.067766"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 0.769795,
+            "timestamp": "2025-06-12T12:07:10.837849"
+          }
+        ],
+        "total_duration": 0.769858
+      },
+      "user_context": {
+        "current_query": "HAT-GRN-005",
+        "timestamp": "2025-06-12T12:07:10.067751",
+        "session_id": "session_-1863313",
+        "query_length": 11,
+        "query_complexity": 0.15000000000000002,
+        "detected_entities": {
+          "product_codes": [
+            "HAT-GRN"
+          ],
+          "numbers": [
+            "005"
+          ]
+        },
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 3,
+          "order": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T12:07:10.838000"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 3,
+      "order": 2
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 5,
+    "avg_response_time": 5.6598880000000005,
+    "max_response_time": 12.0315,
+    "intent_distribution": {
+      "chat": 3,
+      "order": 2
+    },
+    "requests_last_hour": 5
+  }
+}

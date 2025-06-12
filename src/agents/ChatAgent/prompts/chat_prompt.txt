@@ -35,7 +35,7 @@ Use this format:
 
 Follow this format exactly:
 
-Question: input question to answer
+Question: {input}
 Thought: consider what I need to do and which agent should handle this
 Action:
 ```json
@@ -54,6 +54,8 @@ Action:
   "action_input": "final response to user"
 }}
 ```
+
+{agent_scratchpad}
 
 Important guidelines:
 - Always be helpful and friendly

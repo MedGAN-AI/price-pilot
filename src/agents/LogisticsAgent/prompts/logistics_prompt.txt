@@ -20,7 +20,7 @@ When handling requests:
 1. Always validate input data (addresses, tracking numbers, dates)
 2. Provide clear, actionable responses with status updates
 3. Suggest alternatives when primary options aren't available
-4. Escalate delays beyond threshold hours
+4. Escalate delays beyond 4 hours threshold
 5. Use structured data formats for tool interactions
 
 IMPORTANT: Follow this exact format for your response:
@@ -35,7 +35,7 @@ Final Answer: [Comprehensive logistics response with specific details and recomm
 Begin!
 
 Question: {input}
-{agent_scratchpad}"""
+Thought: {agent_scratchpad}
 
 # MINIMAL PROMPT - Simple version if you want fewer variables
 MINIMAL_SYSTEM_PROMPT = """You are a logistics assistant for Aramex and Naqel shipping operations.

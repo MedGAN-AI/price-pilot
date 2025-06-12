@@ -1,0 +1,126 @@
+{
+  "session_info": {
+    "start_time": "2025-06-12T11:48:30.340109",
+    "export_time": "2025-06-12T12:00:15.077007",
+    "total_queries": 2,
+    "average_response_time": 5.0536487102508545
+  },
+  "conversation_history": [
+    {
+      "query": "i want to order 5 black tshirt",
+      "response": "Here are our available products:\n\n*   Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n*   Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n*   White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n*   Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n*   Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n*   Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.7672131147540984,
+      "agent_used": "Processed by OrderAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T11:49:33.919407",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000348,
+            "timestamp": "2025-06-12T11:49:33.940165"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 3.84075,
+            "timestamp": "2025-06-12T11:49:37.781490"
+          }
+        ],
+        "total_duration": 3.8410979999999997
+      },
+      "user_context": {
+        "current_query": "i want to order 5 black tshirt",
+        "timestamp": "2025-06-12T11:49:33.940051",
+        "session_id": "session_47062910",
+        "query_length": 30,
+        "query_complexity": 0.44999999999999996,
+        "detected_entities": {
+          "numbers": [
+            "5"
+          ]
+        },
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T11:49:37.781973"
+    },
+    {
+      "query": "TSHIRT-BLK-004, 5, mohammedzaloomai@gmail.com",
+      "response": "Hi! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-12T11:50:01.044874",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000553,
+            "timestamp": "2025-06-12T11:50:01.052984"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 6.234284,
+            "timestamp": "2025-06-12T11:50:07.289352"
+          }
+        ],
+        "total_duration": 6.234837
+      },
+      "user_context": {
+        "current_query": "TSHIRT-BLK-004, 5, mohammedzaloomai@gmail.com",
+        "timestamp": "2025-06-12T11:50:01.052800",
+        "session_id": "session_-2472884",
+        "query_length": 45,
+        "query_complexity": 0.35,
+        "detected_entities": {
+          "product_codes": [
+            "TSHIRT-BLK"
+          ],
+          "numbers": [
+            "004",
+            "5"
+          ],
+          "emails": [
+            "mohammedzaloomai@gmail.com"
+          ]
+        },
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 1,
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-12T11:50:07.289487"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "order": 1,
+      "chat": 1
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 2,
+    "avg_response_time": 5.0379675,
+    "max_response_time": 6.234837,
+    "intent_distribution": {
+      "order": 1,
+      "chat": 1
+    },
+    "requests_last_hour": 2
+  }
+}

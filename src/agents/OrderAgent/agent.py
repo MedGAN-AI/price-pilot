@@ -71,22 +71,29 @@ class OrderAgent:
         state = initialize_state()
         state['messages'] = [{"type": "human", "content": query}]
         
-        try:
-            result = self.graph.invoke(state)
-            
-            # Extract the final message content
-            if result.get('messages'):
-                final_message = result['messages'][-1]
-                # Handle different message types - AIMessage has .content attribute, not .get()
-                if hasattr(final_message, 'content'):
-                    return final_message.content
-                elif isinstance(final_message, dict):
-                    return final_message.get('content', 'No response')
-                else:
-                    return str(final_message)
-            return 'No response'
-        except Exception as e:
-            return f"Error processing request: {str(e)}"
+        result = self.graph.invoke(state)
+        
+        # Extract the final message content
+        if result.get('messages'):
+            final_message = result['messages'][-1]
+            # Handle different message types - AIMessage has .content attribute, not .get()
+            if hasattr(final_message, 'content'):
+                return final_message.content
+            elif isinstance(final_message, dict):
+                return final_message.get('content', 'No response')
+            else:
+                return str(final_message)
+        return 'No response'
+    
+    def get_status(self) -> dict:
+        """Get agent status"""
+        return {
+            "agent_name": "OrderAgent",
+            "status": "active",
+            "tools_count": len(tools),
+            "config": config,
+            "framework_version": "core_v2"
+        }
 
 # Convenience function for direct invocation
 def run_order_agent(message: str) -> str:

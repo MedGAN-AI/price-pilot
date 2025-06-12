@@ -1,13 +1,28 @@
-# File: src/agents/InventoryAgent/config.yaml
+# InventoryAgent Configuration - Standardized Core Format
 
-# 1) LLM settings
 llm:
-  provider: "google-genai"       # or "openai" if you switch providers later
+  provider: "google-genai"
   model: "gemini-2.0-flash"
   temperature: 0.0
 
-# 2) Use Supabase or in-memory fallback
-use_supabase: false
+agent:
+  type: "react"  # Uses ReAct pattern for inventory queries
+  max_iterations: 10
+  early_stopping_method: "generate"
+  max_execution_time: 30
 
-# 3) SKU regex (optional; defaulting to uppercase + digits + dashes)
-sku_pattern: "^[A-Z0-9\\-]{5,}$"
+specialized_config:
+  # InventoryAgent specific configurations
+  use_supabase: false
+  sku_pattern: "^[A-Z0-9\\-]{5,}$"
+  stop_keywords: []  # No special stopping keywords for inventory
+  context_key: "inventory_context"
+  
+  # Inventory settings
+  default_stock_threshold: 10
+  check_multiple_skus: true
+  
+# Agent-specific settings
+inventory_settings:
+  enable_low_stock_alerts: true
+  cache_stock_queries: false

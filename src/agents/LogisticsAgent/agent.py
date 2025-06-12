@@ -93,9 +93,9 @@ def get_logistics_data(tracking_number: str = None) -> List[Dict]:
     """Get logistics data from Supabase."""
     try:
         if tracking_number:
-            response = supabase.table('logistics').select('*').eq('tracking_number', tracking_number).execute()
+            response = supabase.table('Logistics').select('*').eq('tracking_number', tracking_number).execute()
         else:
-            response = supabase.table('logistics').select('*').limit(10).execute()
+            response = supabase.table('Logistics').select('*').limit(10).execute()
         return response.data
     except Exception as e:
         print(f"Error fetching logistics data: {e}")
@@ -111,7 +111,7 @@ def update_logistics_status(tracking_number: str, status: str, location: str = N
         if location:
             update_data['current_location'] = location
             
-        response = supabase.table('logistics').update(update_data).eq('tracking_number', tracking_number).execute()
+        response = supabase.table('Logistics').update(update_data).eq('tracking_number', tracking_number).execute()
         return len(response.data) > 0
     except Exception as e:
         print(f"Error updating logistics status: {e}")
@@ -120,7 +120,7 @@ def update_logistics_status(tracking_number: str, status: str, location: str = N
 def create_logistics_entry(data: Dict) -> Dict:
     """Create new logistics entry in Supabase."""
     try:
-        response = supabase.table('logistics').insert(data).execute()
+        response = supabase.table('Logistics').insert(data).execute()
         return response.data[0] if response.data else {}
     except Exception as e:
         print(f"Error creating logistics entry: {e}")
@@ -130,8 +130,10 @@ def create_logistics_entry(data: Dict) -> Dict:
 def create_enhanced_logistics_tools():
     """Create logistics tools with Supabase integration."""
     
-    def track_shipment(tracking_number: str) -> str:
+    def track_shipment(query: str) -> str:
         """Track shipment using Supabase data."""
+        # Extract tracking number from query
+        tracking_number = query.strip()
         data = get_logistics_data(tracking_number)
         if data:
             shipment = data[0]
@@ -140,43 +142,147 @@ def create_enhanced_logistics_tools():
                 "status": shipment.get('status'),
                 "current_location": shipment.get('current_location'),
                 "estimated_delivery": shipment.get('estimated_delivery'),
-                "carrier": shipment.get('carrier')
-            })
-        return json.dumps({"error": "Shipment not found"})
+                "carrier": shipment.get('carrier'),
+                "origin": shipment.get('origin'),
+                "destination": shipment.get('destination')
+            }, indent=2)
+        return json.dumps({"error": "Shipment not found"}, indent=2)
     
-    def schedule_pickup(origin: str, destination: str, carrier: str = "aramex") -> str:
+    def schedule_pickup(query: str) -> str:
         """Schedule pickup and create entry in Supabase."""
-        tracking_number = f"PU{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        data = {
-            'tracking_number': tracking_number,
-            'origin': origin,
-            'destination': destination,
-            'carrier': carrier,
-            'status': 'pickup_scheduled',
-            'created_at': datetime.now(timezone.utc).isoformat()
-        }
-        result = create_logistics_entry(data)
-        if result:
-            return json.dumps({"success": True, "tracking_number": tracking_number, "status": "pickup_scheduled"})
-        return json.dumps({"error": "Failed to schedule pickup"})
+        try:
+            # Parse the query to extract origin and destination
+            # Expected format: "origin to destination" or "origin,destination" or JSON
+            query = query.strip()
+            
+            # Try to parse as JSON first
+            try:
+                data = json.loads(query)
+                origin = data.get('origin', '')
+                destination = data.get('destination', '')
+                carrier = data.get('carrier', 'aramex')
+            except json.JSONDecodeError:
+                # Parse natural language format
+                if ' to ' in query.lower():
+                    parts = query.lower().split(' to ')
+                    origin = parts[0].strip()
+                    destination = parts[1].strip() if len(parts) > 1 else ''
+                elif ',' in query:
+                    parts = query.split(',')
+                    origin = parts[0].strip()
+                    destination = parts[1].strip() if len(parts) > 1 else ''
+                else:
+                    return json.dumps({"error": "Please specify origin and destination (e.g., 'Riyadh to Jeddah')"}, indent=2)
+                carrier = 'aramex'
+            
+            if not origin or not destination:
+                return json.dumps({"error": "Both origin and destination are required"}, indent=2)
+            
+            tracking_number = f"PU{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            entry_data = {
+                'tracking_number': tracking_number,
+                'origin': origin,
+                'destination': destination,
+                'carrier': carrier,
+                'status': 'pickup_scheduled',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'estimated_delivery': (datetime.now() + timedelta(days=3)).isoformat()
+            }
+            
+            result = create_logistics_entry(entry_data)
+            if result:
+                return json.dumps({
+                    "success": True, 
+                    "tracking_number": tracking_number, 
+                    "status": "pickup_scheduled",
+                    "origin": origin,
+                    "destination": destination,
+                    "carrier": carrier
+                }, indent=2)
+            return json.dumps({"error": "Failed to schedule pickup"}, indent=2)
+            
+        except Exception as e:
+            return json.dumps({"error": f"Error scheduling pickup: {str(e)}"}, indent=2)
     
-    def get_all_shipments() -> str:
+    def get_all_shipments(query: str = "") -> str:
         """Get all recent shipments."""
-        data = get_logistics_data()
-        return json.dumps(data)
+        try:
+            data = get_logistics_data()
+            if not data:
+                return json.dumps({"message": "No shipments found"}, indent=2)
+            
+            # Format for better readability
+            formatted_data = []
+            for shipment in data:
+                formatted_data.append({
+                    "tracking_number": shipment.get('tracking_number'),
+                    "status": shipment.get('status'),
+                    "origin": shipment.get('origin'),
+                    "destination": shipment.get('destination'),
+                    "carrier": shipment.get('carrier'),
+                    "current_location": shipment.get('current_location'),
+                    "created_at": shipment.get('created_at')
+                })
+            
+            return json.dumps({"shipments": formatted_data, "count": len(formatted_data)}, indent=2)
+        except Exception as e:
+            return json.dumps({"error": f"Error fetching shipments: {str(e)}"}, indent=2)
     
-    def update_shipment_status(tracking_number: str, status: str, location: str = None) -> str:
+    def update_shipment_status(query: str) -> str:
         """Update shipment status."""
-        success = update_logistics_status(tracking_number, status, location)
-        if success:
-            return json.dumps({"success": True, "updated": True})
-        return json.dumps({"error": "Failed to update status"})
+        try:
+            # Parse query to extract tracking number, status, and optional location
+            # Expected formats: "ABC123,delivered" or "ABC123,delivered,Riyadh" or JSON
+            query = query.strip()
+            
+            try:
+                data = json.loads(query)
+                tracking_number = data.get('tracking_number', '')
+                status = data.get('status', '')
+                location = data.get('location')
+            except json.JSONDecodeError:
+                parts = query.split(',')
+                tracking_number = parts[0].strip() if len(parts) > 0 else ''
+                status = parts[1].strip() if len(parts) > 1 else ''
+                location = parts[2].strip() if len(parts) > 2 else None
+            
+            if not tracking_number or not status:
+                return json.dumps({"error": "Both tracking number and status are required"}, indent=2)
+            
+            success = update_logistics_status(tracking_number, status, location)
+            if success:
+                return json.dumps({
+                    "success": True, 
+                    "tracking_number": tracking_number,
+                    "status": status,
+                    "location": location if location else "Not specified"
+                }, indent=2)
+            return json.dumps({"error": "Failed to update status or shipment not found"}, indent=2)
+            
+        except Exception as e:
+            return json.dumps({"error": f"Error updating status: {str(e)}"}, indent=2)
     
     return [
-        Tool(name="track_shipment", description="Track a shipment by tracking number", func=track_shipment),
-        Tool(name="schedule_pickup", description="Schedule pickup from origin to destination", func=schedule_pickup),
-        Tool(name="get_all_shipments", description="Get all recent shipments", func=get_all_shipments),
-        Tool(name="update_shipment_status", description="Update shipment status and location", func=update_shipment_status)
+        Tool(
+            name="track_shipment", 
+            description="Track a shipment by tracking number. Input: tracking number as string",
+            func=track_shipment
+        ),
+        Tool(
+            name="schedule_pickup", 
+            description="Schedule pickup from origin to destination. Input: 'origin to destination' or JSON with origin, destination, carrier",
+            func=schedule_pickup
+        ),
+        Tool(
+            name="get_all_shipments", 
+            description="Get all recent shipments from the logistics system. Input: empty string or any value",
+            func=get_all_shipments
+        ),
+        Tool(
+            name="update_shipment_status", 
+            description="Update shipment status and location. Input: 'tracking_number,status,location' or JSON",
+            func=update_shipment_status
+        )
     ]
 
 tools = create_enhanced_logistics_tools()
@@ -214,6 +320,7 @@ Guidelines:
 - Provide clear, structured responses with emojis
 - Ask for clarification when needed
 - Format responses professionally
+- When using tools, pass the appropriate parameters as strings
 
 Current request: {input}
 {agent_scratchpad}"""
@@ -266,7 +373,7 @@ What would you like me to help you with?
         # Handle specific logistics requests
         if any(word in user_message for word in ['track', 'schedule', 'update', 'list', 'show']):
             try:
-                result = agent_executor.invoke({"input": user_message})
+                result = agent_executor.invoke({"input": state["messages"][-1].content})
                 content = result.get("output", "I couldn't process that request.")
                 
                 # Add context based on action

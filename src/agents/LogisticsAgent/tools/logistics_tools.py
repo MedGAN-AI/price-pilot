@@ -476,9 +476,11 @@ def update_delivery_estimate_func(tracking_number: str, new_estimate: str, reaso
             "message": f"Failed to update delivery estimate: {str(e)}"
         })
 
-def get_shipment_analytics_func() -> str:
+def get_shipment_analytics_func(input_data: dict = None) -> str:
     """
     Get analytics and insights from monitored shipments
+    Args:
+        input_data: Optional input data (unused but required for LangChain tool compatibility)
     """
     try:
         monitor = get_status_monitor()
@@ -512,6 +514,13 @@ def get_shipment_analytics_func() -> str:
             "status": "error",
             "message": f"Failed to get analytics: {str(e)}"
         })
+
+# And update the tool creation:
+get_analytics_tool = Tool(
+    name="get_shipment_analytics",
+    description="Get analytics and insights from all monitored shipments including performance metrics and trends.",
+    func=lambda x: get_shipment_analytics_func(json.loads(x) if x else {})
+)
 
 # Create LangChain tools
 def create_logistics_tools() -> List[Tool]:

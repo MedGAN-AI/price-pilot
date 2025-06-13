@@ -184,4 +184,5 @@ cython_debug/
 notebooks
 
 .env
+logs/
 

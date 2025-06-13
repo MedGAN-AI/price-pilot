@@ -1,0 +1,163 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T15:17:27.512420",
+    "export_time": "2025-06-13T15:27:40.923511",
+    "total_queries": 3,
+    "average_response_time": 2.4016807079315186
+  },
+  "conversation_history": [
+    {
+      "query": "Track my shipment d3e29137-da33-4c11-bed4-3e9bbb97ad6f",
+      "response": "The shipment with tracking number d3e29137-da33-4c11-bed4-3e9bbb97ad6f has been delivered by Naqel to Khobar Branch on 2025-06-13.",
+      "intent": "logistics",
+      "confidence": 0.95,
+      "agent_used": "Processed by LogisticsAgent - Intent: logistics, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:18:19.441640",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000518,
+            "timestamp": "2025-06-13T15:18:19.464748"
+          },
+          {
+            "step": "agent_dispatch_LogisticsAgent",
+            "duration": 2.304001,
+            "timestamp": "2025-06-13T15:18:21.769462",
+            "agent": "LogisticsAgent",
+            "intent": "logistics",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 2.304519
+      },
+      "user_context": {
+        "current_query": "Track my shipment d3e29137-da33-4c11-bed4-3e9bbb97ad6f",
+        "timestamp": "2025-06-13T15:18:19.464635",
+        "session_id": "session_59145441",
+        "query_length": 54,
+        "query_complexity": 1.0,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "logistics": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:18:21.769689"
+    },
+    {
+      "query": "how many red running shoes we have",
+      "response": "There are 3 unit(s) of \"Red Running Shoes\" in stock.",
+      "intent": "inventory",
+      "confidence": 0.65,
+      "agent_used": "Processed by InventoryAgent - Intent: inventory, Confidence: 0.65",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:26:55.836536",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.004939,
+            "timestamp": "2025-06-13T15:26:56.002199"
+          },
+          {
+            "step": "agent_dispatch_InventoryAgent",
+            "duration": 2.857975,
+            "timestamp": "2025-06-13T15:26:58.872438",
+            "agent": "InventoryAgent",
+            "intent": "inventory",
+            "confidence": 0.65
+          }
+        ],
+        "total_duration": 2.862914
+      },
+      "user_context": {
+        "current_query": "how many red running shoes we have",
+        "timestamp": "2025-06-13T15:26:56.001686",
+        "session_id": "session_-5518622",
+        "query_length": 34,
+        "query_complexity": 0.35,
+        "detected_entities": {},
+        "intent_confidence": 0.65,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "logistics": 1,
+          "inventory": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:26:58.872731"
+    },
+    {
+      "query": "forecast the next week",
+      "response": "Here's a forecast for the next 7 days generated using the ARIMA model.  The numbers represent predicted values;  I do not have enough information to provide units or context for these values. To get a more useful forecast, please provide the data you wish to forecast.\n",
+      "intent": "forecast",
+      "confidence": 0.95,
+      "agent_used": "Processed by ForecastAgent - Intent: forecast, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:27:25.693484",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.00065,
+            "timestamp": "2025-06-13T15:27:25.714506"
+          },
+          {
+            "step": "agent_dispatch_ForecastAgent",
+            "duration": 1.806885,
+            "timestamp": "2025-06-13T15:27:27.523230",
+            "agent": "ForecastAgent",
+            "intent": "forecast",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 1.8075350000000001
+      },
+      "user_context": {
+        "current_query": "forecast the next week",
+        "timestamp": "2025-06-13T15:27:25.714350",
+        "session_id": "session_-4403039",
+        "query_length": 22,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "logistics": 1,
+          "inventory": 1,
+          "forecast": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:27:27.523423"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "logistics": 1,
+      "inventory": 1,
+      "forecast": 1
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 3,
+    "avg_response_time": 2.3249893333333334,
+    "max_response_time": 2.862914,
+    "intent_distribution": {
+      "logistics": 1,
+      "inventory": 1,
+      "forecast": 1
+    },
+    "requests_last_hour": 3
+  }
+}

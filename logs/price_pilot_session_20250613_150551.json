@@ -1,0 +1,165 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T15:04:21.272140",
+    "export_time": "2025-06-13T15:05:51.636499",
+    "total_queries": 3,
+    "average_response_time": 6.055735905965169
+  },
+  "conversation_history": [
+    {
+      "query": "hi",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.50",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:05:00.222832",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000398,
+            "timestamp": "2025-06-13T15:05:00.254617"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.159022,
+            "timestamp": "2025-06-13T15:05:01.414157",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.5
+          }
+        ],
+        "total_duration": 1.15942
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-13T15:05:00.254528",
+        "session_id": "session_-5930900",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:05:01.414511"
+    },
+    {
+      "query": "recommend a shes",
+      "response": "The top shoe recommendations are: Red Running Shoes (SKU: SHOES-RED-001) for $79.99 and Blue Trail Shoes (SKU: SHOES-BLU-002) for $89.99.",
+      "intent": "recommend",
+      "confidence": 0.95,
+      "agent_used": "Processed by RecommendAgent - Intent: recommend, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:05:18.306145",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000167,
+            "timestamp": "2025-06-13T15:05:18.307796"
+          },
+          {
+            "step": "agent_dispatch_RecommendAgent",
+            "duration": 13.783426,
+            "timestamp": "2025-06-13T15:05:32.091806",
+            "agent": "RecommendAgent",
+            "intent": "recommend",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 13.783593
+      },
+      "user_context": {
+        "current_query": "recommend a shes",
+        "timestamp": "2025-06-13T15:05:18.307761",
+        "session_id": "session_-1274632",
+        "query_length": 16,
+        "query_complexity": 0.15,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1,
+          "recommend": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:05:32.091971"
+    },
+    {
+      "query": "i want to order",
+      "response": "Here are our available products:\n\n*   Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n*   Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n*   White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n*   Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n*   Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n*   Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:05:40.253957",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 9.2e-05,
+            "timestamp": "2025-06-13T15:05:40.254917"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 3.187979,
+            "timestamp": "2025-06-13T15:05:43.443242",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 3.188071
+      },
+      "user_context": {
+        "current_query": "i want to order",
+        "timestamp": "2025-06-13T15:05:40.254896",
+        "session_id": "session_21199146",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "chat": 1,
+          "recommend": 1,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:05:43.443566"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 1,
+      "recommend": 1,
+      "order": 1
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 3,
+    "avg_response_time": 6.043694666666667,
+    "max_response_time": 13.783593,
+    "intent_distribution": {
+      "chat": 1,
+      "recommend": 1,
+      "order": 1
+    },
+    "requests_last_hour": 3
+  }
+}

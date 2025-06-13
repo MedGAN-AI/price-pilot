@@ -83,7 +83,33 @@ class IntentDetector:
         lower_text = text.lower()
         scores = {}
         
-        # Advanced scoring algorithm
+        # CRITICAL FIX: Check for explicit order patterns first
+        # Pattern: SKU, quantity, email (in any order)
+        sku_pattern = re.search(r'[A-Z]+-[A-Z]+-\d{3}', text)
+        email_pattern = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9-.]+', text)
+        quantity_pattern = re.search(r'\b\d+\b', text)
+        
+        if sku_pattern and email_pattern and quantity_pattern:
+            # This is definitely an order - override everything else
+            result = {
+                "intent": "order",
+                "confidence": 0.95,
+                "all_scores": {"order": 10.0},
+                "detected_entities": self._extract_entities(text),
+                "order_details": {
+                    "sku": sku_pattern.group(),
+                    "email": email_pattern.group(),
+                    "quantity": quantity_pattern.group()
+                }
+            }
+            
+            # Cache the result
+            self._intent_cache[cache_key] = result
+            self._cache_expiry[cache_key] = datetime.now()
+            
+            return result
+        
+        # Advanced scoring algorithm for other intents
         for intent, patterns in self.intent_patterns.items():
             score = 0.0
             
@@ -166,17 +192,19 @@ class IntentDetector:
         return {k: v for k, v in entities.items() if v}
 
 class ContextManager:
-    """Advanced context management for better conversation flow"""
+    """Advanced context management for better conversation flow with persistent memory"""
     
     def __init__(self, max_history: int = 50):
         self.max_history = max_history
         self.conversation_patterns = defaultdict(int)
         self.user_preferences = defaultdict(dict)
         self.session_data = {}
+        self.pending_orders = {}  # Track incomplete orders
+        self.user_sessions = {}   # Track user-specific sessions
     
     def update_context(self, state: Dict[str, Any], query: str, intent_result: Dict[str, Any]) -> Dict[str, Any]:
-        """Update and enrich user context"""
-        session_id = self._get_session_id(query)
+        """Update and enrich user context with memory persistence"""
+        session_id = self._get_session_id(query, intent_result)
         
         # Build comprehensive context
         context = {
@@ -190,37 +218,81 @@ class ContextManager:
             "conversation_turn": len(state.get("conversation_history", [])) + 1
         }
         
+        # CRITICAL FIX: Handle order context persistence
+        if intent_result["intent"] == "order":
+            context["is_order_request"] = True
+            
+            # Check if this is order details following a product listing
+            if hasattr(intent_result, 'order_details'):
+                context["order_details"] = intent_result['order_details']
+                context["order_ready"] = True
+            elif self._has_pending_order(session_id):
+                context["pending_order"] = self.pending_orders[session_id]
+                context["order_continuation"] = True
+            else:
+                # This is a new order request
+                self.pending_orders[session_id] = {
+                    "started_at": datetime.now().isoformat(),
+                    "status": "initiated"
+                }
+                context["order_initiated"] = True
+        
         # Track conversation patterns
         intent = intent_result["intent"]
         self.conversation_patterns[intent] += 1
         context["intent_frequency"] = dict(self.conversation_patterns)
         
-        # Add session continuity
+        # Add session continuity with enhanced memory
         if session_id in self.session_data:
-            context["previous_intents"] = self.session_data[session_id].get("intents", [])[-5:]
+            session = self.session_data[session_id]
+            context["previous_intents"] = session.get("intents", [])[-5:]
             context["session_duration"] = (
                 datetime.now() - 
-                datetime.fromisoformat(self.session_data[session_id]["start_time"])
+                datetime.fromisoformat(session["start_time"])
             ).total_seconds()
+            
+            # Maintain conversation flow context
+            recent_intents = [i["intent"] for i in session.get("intents", [])[-3:]]
+            if "order" in recent_intents and intent_result["intent"] != "order":
+                # User might be continuing an order process
+                context["potential_order_continuation"] = True
+                
         else:
             self.session_data[session_id] = {
                 "start_time": datetime.now().isoformat(),
-                "intents": []
+                "intents": [],
+                "user_preferences": {}
             }
             context["previous_intents"] = []
             context["session_duration"] = 0
         
-        # Update session data
+        # Update session data with enhanced tracking
         self.session_data[session_id]["intents"].append({
             "intent": intent,
             "timestamp": context["timestamp"],
-            "confidence": intent_result["confidence"]
+            "confidence": intent_result["confidence"],
+            "entities": intent_result.get("detected_entities", {}),
+            "query": query[:100]  # Store truncated query for context
         })
         
         return context
     
-    def _get_session_id(self, query: str) -> str:
-        """Generate or retrieve session ID"""
+    def _has_pending_order(self, session_id: str) -> bool:
+        """Check if there's a pending order for this session"""
+        return session_id in self.pending_orders
+    
+    def _get_session_id(self, query: str, intent_result: Dict[str, Any]) -> str:
+        """Generate or retrieve session ID with user context"""
+        # Try to identify user by email if present
+        entities = intent_result.get("detected_entities", {})
+        emails = entities.get("emails", [])
+        
+        if emails:
+            # Use email-based session for continuity
+            email_hash = hash(emails[0])
+            return f"user_{email_hash}_{datetime.now().strftime('%Y%m%d')}"[:20]
+        
+        # Fallback to query-based session
         return f"session_{hash(query[:50])}_{datetime.now().strftime('%Y%m%d')}"[:16]
     
     def _assess_complexity(self, query: str) -> float:
@@ -324,7 +396,7 @@ def intent_router(state: OrchestrationState) -> OrchestrationState:
 
 def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
     """
-    Intelligent dispatch with performance optimization and fallback handling
+    Intelligent dispatch with performance optimization and conversation context awareness
     """
     start_time = datetime.now()
     
@@ -343,17 +415,34 @@ def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
             "order": order_agent_graph
         }
         
-        # Smart agent selection based on confidence and context
+        # CRITICAL FIX: Smart agent selection with order context awareness
         selected_agent = agent_map.get(intent, shopping_assistant)
         agent_name = intent.capitalize() + "Agent"
         
-        # Low confidence fallback logic
-        if confidence < 0.4:
+        # Special handling for order-related queries
+        if user_context.get("is_order_request") or user_context.get("order_continuation"):
+            selected_agent = order_agent_graph
+            agent_name = "OrderAgent"
+            confidence = max(confidence, 0.85)  # Boost confidence for order continuations
+            logger.info(f"Order context detected - routing to OrderAgent")
+        
+        # Check for potential order continuation from conversation history
+        elif user_context.get("potential_order_continuation"):
+            recent_intents = user_context.get("previous_intents", [])
+            if any(intent_entry.get("intent") == "order" for intent_entry in recent_intents[-2:]):
+                # User was recently in order flow, this might be order details
+                entities = user_context.get("detected_entities", {})
+                if entities.get("product_codes") or entities.get("emails"):
+                    selected_agent = order_agent_graph
+                    agent_name = "OrderAgent (context-aware)"
+                    confidence = 0.80
+                    logger.info(f"Order continuation detected via context - routing to OrderAgent")
+        
+        # Low confidence fallback logic with conversation awareness
+        elif confidence < 0.4:
             # Use conversation history to make better decision
-            recent_intents = [
-                h.get("intent", "chat") 
-                for h in state.get("conversation_history", [])[-3:]
-            ]
+            conversation_history = state.get("conversation_history", [])
+            recent_intents = [h.get("intent", "chat") for h in conversation_history[-3:]]
             
             if recent_intents:
                 # Use most common recent intent if confidence is low
@@ -361,57 +450,106 @@ def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
                 common_intent = Counter(recent_intents).most_common(1)[0][0]
                 if common_intent != "chat":
                     selected_agent = agent_map.get(common_intent, shopping_assistant)
-                    agent_name = common_intent.capitalize() + "Agent"
+                    agent_name = common_intent.capitalize() + "Agent (history-based)"
+                    confidence = 0.60  # Moderate confidence for history-based selection
                     logger.info(f"Low confidence fallback: using {agent_name} based on conversation history")
         
-        # Log agent selection
-        logger.info(f"Dispatching to {agent_name} (confidence: {confidence:.2f})")
+        # Log agent selection with reasoning
+        selection_reason = f"Intent: {intent}, Confidence: {confidence:.2f}"
+        if user_context.get("is_order_request"):
+            selection_reason += ", Order context detected"
+        if user_context.get("order_continuation"):
+            selection_reason += ", Order continuation"
         
-        # Prepare enhanced sub-state
+        logger.info(f"Dispatching to {agent_name} ({selection_reason})")
+        
+        # Prepare enhanced sub-state with full context
         sub_state = {
             "messages": state["messages"],
             "intermediate_steps": [],
             "intent": intent,
             "confidence": confidence,
-            "user_context": user_context
+            "user_context": user_context,
+            "conversation_history": state.get("conversation_history", [])
         }
         
-        # Invoke selected agent with error handling
+        # Invoke selected agent with enhanced error handling
         try:
             result = selected_agent.invoke(sub_state)
+            
+            # Post-process result to maintain context
+            if hasattr(result, "get") and result.get("messages"):
+                # Agent completed successfully
+                pass
+            else:
+                # Handle unexpected result format
+                logger.warning(f"Unexpected result format from {agent_name}")
+                result = {"messages": state["messages"]}
+                
         except Exception as agent_error:
             logger.error(f"Agent {agent_name} failed: {agent_error}")
-            # Fallback to chat agent
-            result = shopping_assistant.invoke(sub_state)
-            agent_name = "ChatAgent (fallback)"
+            
+            # Intelligent fallback based on the original intent
+            if intent == "order":
+                # For order failures, provide helpful order-specific fallback
+                fallback_message = (
+                    "I'm having trouble processing your order right now. "
+                    "Please provide your order details in this format: "
+                    "Product SKU, quantity, email address"
+                )
+            else:
+                # General fallback
+                fallback_message = (
+                    "I'm experiencing some technical difficulties. "
+                    "Let me try to help you in a different way. Could you please rephrase your question?"
+                )
+            
+            # Try chat agent as fallback
+            try:
+                fallback_state = {**sub_state, "messages": [HumanMessage(content=fallback_message)]}
+                result = shopping_assistant.invoke(fallback_state)
+                agent_name = "ChatAgent (error fallback)"
+            except Exception as fallback_error:
+                logger.error(f"Fallback agent also failed: {fallback_error}")
+                result = {
+                    "messages": [AIMessage(content=fallback_message)],
+                    "intermediate_steps": []
+                }
+                agent_name = "Emergency fallback"
         
         # Performance tracking
         processing_time = (datetime.now() - start_time).total_seconds()
         performance_metrics = state.get("performance_metrics", {})
+        if "processing_steps" not in performance_metrics:
+            performance_metrics["processing_steps"] = []
+            
         performance_metrics["processing_steps"].append({
             "step": f"agent_dispatch_{agent_name}",
             "duration": processing_time,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "agent": agent_name,
+            "intent": intent,
+            "confidence": confidence
         })
         performance_metrics["total_duration"] = sum(
             step["duration"] for step in performance_metrics["processing_steps"]
         )
         
         return {
-            "messages": result["messages"],
-            "intermediate_steps": [],
+            "messages": result.get("messages", state["messages"]),
+            "intermediate_steps": result.get("intermediate_steps", []),
             "intent": intent,
             "confidence": confidence,
             "user_context": user_context,
             "conversation_history": state["conversation_history"],
             "performance_metrics": performance_metrics,
-            "agent_selection_reason": f"Processed by {agent_name}"
+            "agent_selection_reason": f"Processed by {agent_name} - {selection_reason}"
         }
         
     except Exception as e:
         logger.error(f"Critical error in dispatch: {e}")
         
-        # Emergency fallback
+        # Emergency fallback with better error context
         error_message = (
             "I apologize, but I'm experiencing some technical difficulties. "
             "Let me try to help you in a different way. Could you please rephrase your question?"

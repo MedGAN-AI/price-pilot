@@ -1,0 +1,206 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T14:38:09.054101",
+    "export_time": "2025-06-13T14:45:15.711595",
+    "total_queries": 4,
+    "average_response_time": 4.157460153102875
+  },
+  "conversation_history": [
+    {
+      "query": "hi",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-13T14:38:49.937530",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000307,
+            "timestamp": "2025-06-13T14:38:49.961338"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.159511,
+            "timestamp": "2025-06-13T14:38:51.121363"
+          }
+        ],
+        "total_duration": 1.159818
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-13T14:38:49.961245",
+        "session_id": "session_59199435",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T14:38:51.121579"
+    },
+    {
+      "query": "recommend me a shoes",
+      "response": "I have found a few shoes for you: Red Running Shoes (SKU: SHOES-RED-001) for $79.99 and Blue Trail Shoes (SKU: SHOES-BLU-002) for $89.99.",
+      "intent": "recommend",
+      "confidence": 0.95,
+      "agent_used": "Processed by RecommendAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-13T14:39:03.225504",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 9.4e-05,
+            "timestamp": "2025-06-13T14:39:03.226477"
+          },
+          {
+            "step": "agent_dispatch_RecommendAgent",
+            "duration": 10.794612,
+            "timestamp": "2025-06-13T14:39:14.021465"
+          }
+        ],
+        "total_duration": 10.794706000000001
+      },
+      "user_context": {
+        "current_query": "recommend me a shoes",
+        "timestamp": "2025-06-13T14:39:03.226454",
+        "session_id": "session_-8688413",
+        "query_length": 20,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1,
+          "recommend": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T14:39:14.021660"
+    },
+    {
+      "query": "i want to order",
+      "response": "Here are our available products:\n* Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n* Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n* White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n* Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n* Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n* Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.7672131147540984,
+      "agent_used": "Processed by OrderAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-13T14:39:25.631856",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 9.4e-05,
+            "timestamp": "2025-06-13T14:39:25.633057"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 3.794659,
+            "timestamp": "2025-06-13T14:39:29.428156"
+          }
+        ],
+        "total_duration": 3.7947529999999996
+      },
+      "user_context": {
+        "current_query": "i want to order",
+        "timestamp": "2025-06-13T14:39:25.633038",
+        "session_id": "session_31846892",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1,
+          "recommend": 1,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T14:39:29.428865"
+    },
+    {
+      "query": "HAT-GRN-005, 1, mohammedzaloomai@gmail.com",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent",
+      "performance_metrics": {
+        "start_time": "2025-06-13T14:39:51.878352",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 9.2e-05,
+            "timestamp": "2025-06-13T14:39:51.879423"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 0.850596,
+            "timestamp": "2025-06-13T14:39:52.730333"
+          }
+        ],
+        "total_duration": 0.850688
+      },
+      "user_context": {
+        "current_query": "HAT-GRN-005, 1, mohammedzaloomai@gmail.com",
+        "timestamp": "2025-06-13T14:39:51.879404",
+        "session_id": "session_-3499484",
+        "query_length": 42,
+        "query_complexity": 0.35,
+        "detected_entities": {
+          "product_codes": [
+            "HAT-GRN"
+          ],
+          "numbers": [
+            "005",
+            "1"
+          ],
+          "emails": [
+            "mohammedzaloomai@gmail.com"
+          ]
+        },
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2,
+          "recommend": 1,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T14:39:52.730832"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 2,
+      "recommend": 1,
+      "order": 1
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 4,
+    "avg_response_time": 4.14999125,
+    "max_response_time": 10.794706000000001,
+    "intent_distribution": {
+      "chat": 2,
+      "recommend": 1,
+      "order": 1
+    },
+    "requests_last_hour": 4
+  }
+}

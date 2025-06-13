@@ -3,6 +3,7 @@ ChatAgent Delegation Tools
 Tools for delegating requests to specialized agents and managing conversation context
 """
 import json
+import re
 from typing import Dict, Any, List
 from langchain_core.tools import Tool
 from langchain_core.messages import HumanMessage
@@ -17,9 +18,18 @@ from src.agents.ForecastAgent.agent import forecast_assistant, initialize_state 
 def delegate_to_order_agent(request: str) -> str:
     """
     Delegate order-related requests to OrderAgent.
-    Handles order creation, status checking, updates, cancellation.
     """
     try:
+        # Check if this is a direct order format: SKU, quantity, email
+        order_pattern = re.compile(r'([A-Z0-9\-]{5,}).*?(\d+).*?([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)')
+        order_match = order_pattern.search(request)
+        
+        if order_match:
+            # Format the request to be more explicit for the OrderAgent
+            sku, quantity, email = order_match.groups()
+            enhanced_request = f"Create an order for {sku}, quantity {quantity}, email {email}"
+            request = enhanced_request
+        
         # Initialize OrderAgent state
         state = order_init_state()
         state["messages"] = [HumanMessage(content=request)]
@@ -30,10 +40,9 @@ def delegate_to_order_agent(request: str) -> str:
         # Extract and clean response
         if result and "messages" in result and result["messages"]:
             response = result["messages"][-1].content
-            # Return clean response without agent prefix to prevent verbosity
             return response
         else:
-            return "I wasn't able to process your order request. Please provide more details or try again."
+            return "I wasn't able to process your order request. Please try again."
             
     except Exception as e:
         return f"I encountered an issue processing your order: {str(e)}. Please try again."

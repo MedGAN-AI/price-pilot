@@ -1,6 +1,21 @@
 """
 ChatAgent Memory Management
-Handles conversation memory, user context, and session state
+Handles convers        # Remove memory artifacts that create loops
+        memory_artifacts = [
+            "No user context available yet.",
+            "This is the start of our conversation.",
+            "Name: ",
+            "Email: ", 
+            "Interested in: ",
+            "User: ",
+            "Assistant: ",
+            "Successfully updated user context",
+            "Successfully updated",
+            "User context updated successfully",
+            "Proceed with your response",
+            "Invalid format",
+            "Failed to update context"
+        ]user context, and session state
 """
 import json
 import os
@@ -18,6 +33,8 @@ class ConversationMemory:
             "session_start": datetime.now(timezone.utc).isoformat(),
             "interaction_count": 0
         }
+        self.context_update_tracker: set = set()  # Track recent context updates to prevent loops
+        self.context_update_tracker: set = set()  # Track recent context updates
     
     def add_interaction(self, user_input: str, agent_response: str, agent_used: str = "ChatAgent"):
         """Add a new interaction to conversation history"""
@@ -53,10 +70,11 @@ class ConversationMemory:
             "Email: ", 
             "Interested in: ",
             "User: ",
-            "Assistant: ",            "[CHECK] Updated user context:",
-            "[CHECK] Updated",
-            "[ERROR] Invalid format",
-            "[ERROR] Failed to update context"
+            "Assistant: ",
+            "Successfully updated user context:",
+            "Successfully updated",
+            "Invalid format",
+            "Failed to update context"
         ]
         
         for artifact in memory_artifacts:
@@ -182,22 +200,30 @@ def update_user_context_tool(context_update: str) -> str:
     Update user context with new information.
     Format: 'key:value' or JSON string
     """
+    # Check if this update was already done recently to prevent loops
+    # Use content-based key to prevent the same update multiple times
+    update_key = f"{context_update}"
+    if update_key in conversation_memory.context_update_tracker:
+        return "Context update already processed. Please use Final Answer to respond to the user."
+    
     try:
         # Try to parse as JSON first
         try:
             update_data = json.loads(context_update)
             conversation_memory.user_context.update(update_data)
-            return f"[CHECK] Updated user context: {update_data}"
+            conversation_memory.context_update_tracker.add(update_key)
+            return "Context updated successfully. Use Final Answer to respond to the user - do not call any more tools."
         except json.JSONDecodeError:
             # Parse as key:value format
             if ":" in context_update:
                 key, value = context_update.split(":", 1)
                 conversation_memory.user_context[key.strip()] = value.strip()
-                return f"[CHECK] Updated {key.strip()}: {value.strip()}"
+                conversation_memory.context_update_tracker.add(update_key)
+                return "Context updated successfully. Use Final Answer to respond to the user - do not call any more tools."
             else:
-                return "[ERROR] Invalid format. Use 'key:value' or JSON format"
+                return "Invalid format. Use 'key:value' or JSON format. Then use Final Answer to respond."
     except Exception as e:
-        return f"[ERROR] Failed to update context: {e}"
+        return f"Failed to update context: {e}. Use Final Answer to respond to the user."
 
 # Create LangChain Tools
 get_user_context_tool_lc = Tool(

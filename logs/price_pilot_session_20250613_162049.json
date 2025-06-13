@@ -1,0 +1,247 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T16:17:50.974796",
+    "export_time": "2025-06-13T16:20:49.446756",
+    "total_queries": 5,
+    "average_response_time": 1.860797643661499
+  },
+  "conversation_history": [
+    {
+      "query": "hi",
+      "response": "Hello! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:19:09.254555",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000461,
+            "timestamp": "2025-06-13T16:19:09.278475"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.464637,
+            "timestamp": "2025-06-13T16:19:10.743739",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 1.465098
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-13T16:19:09.278357",
+        "session_id": "session_-6393998",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:19:10.743916"
+    },
+    {
+      "query": "my name is mohammed",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:19:16.902195",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.00013,
+            "timestamp": "2025-06-13T16:19:16.903285"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 0.852367,
+            "timestamp": "2025-06-13T16:19:17.756034",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 0.852497
+      },
+      "user_context": {
+        "current_query": "my name is mohammed",
+        "timestamp": "2025-06-13T16:19:16.903243",
+        "session_id": "session_-5992186",
+        "query_length": 19,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:19:17.756179"
+    },
+    {
+      "query": "i want to order",
+      "response": "Here are our available products:\n\n• Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n• Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n• White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n• Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n• Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n• Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:19:32.498552",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000253,
+            "timestamp": "2025-06-13T16:19:32.500203"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 4.060007,
+            "timestamp": "2025-06-13T16:19:36.560838",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 4.0602599999999995
+      },
+      "user_context": {
+        "current_query": "i want to order",
+        "timestamp": "2025-06-13T16:19:32.500137",
+        "session_id": "session_72122804",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "chat": 2,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:19:36.561304"
+    },
+    {
+      "query": "im mohammed",
+      "response": "Hi Mohammed, nice to meet you! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.50",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:20:14.395662",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000224,
+            "timestamp": "2025-06-13T16:20:14.398437"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 2.115969,
+            "timestamp": "2025-06-13T16:20:16.516157",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.5
+          }
+        ],
+        "total_duration": 2.116193
+      },
+      "user_context": {
+        "current_query": "im mohammed",
+        "timestamp": "2025-06-13T16:20:14.398367",
+        "session_id": "session_-5290654",
+        "query_length": 11,
+        "query_complexity": 0.1,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 3,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:20:16.516893"
+    },
+    {
+      "query": "what is my name",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:20:24.491246",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000146,
+            "timestamp": "2025-06-13T16:20:24.492269"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 0.774896,
+            "timestamp": "2025-06-13T16:20:25.267541",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 0.775042
+      },
+      "user_context": {
+        "current_query": "what is my name",
+        "timestamp": "2025-06-13T16:20:24.492229",
+        "session_id": "session_55178899",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 4,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:20:25.267677"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 4,
+      "order": 1
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 5,
+    "avg_response_time": 1.853818,
+    "max_response_time": 4.0602599999999995,
+    "intent_distribution": {
+      "chat": 4,
+      "order": 1
+    },
+    "requests_last_hour": 5
+  }
+}

@@ -21,6 +21,9 @@ from src.core import (
 # Import inventory tools
 from src.agents.InventoryAgent.tools.check_stock_tools import stock_by_sku_tool, stock_by_name_tool
 
+# Import memory tools for user context access
+from src.agents.ChatAgent.tools.memory_tools import memory_tools
+
 # Load and standardize configuration
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
 raw_config = load_config(CONFIG_PATH)
@@ -36,7 +39,7 @@ error_handler = create_agent_error_handler("InventoryAgent")
 tools = [
     stock_by_sku_tool,    # CheckStockBySKU
     stock_by_name_tool,   # CheckStockByName
-]
+] + memory_tools
 
 # Load prompt template
 PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "inventory_prompt.txt")

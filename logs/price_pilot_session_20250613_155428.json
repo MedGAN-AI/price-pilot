@@ -1,0 +1,457 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T15:46:49.641693",
+    "export_time": "2025-06-13T15:54:28.265443",
+    "total_queries": 9,
+    "average_response_time": 2.9210512108272977
+  },
+  "conversation_history": [
+    {
+      "query": "hi",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.50",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:47:14.763894",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000437,
+            "timestamp": "2025-06-13T15:47:14.788415"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.109982,
+            "timestamp": "2025-06-13T15:47:15.898950",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.5
+          }
+        ],
+        "total_duration": 1.110419
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-13T15:47:14.788308",
+        "session_id": "session_78659554",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:47:15.899128"
+    },
+    {
+      "query": "my name is mohammed",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.50",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:47:24.557917",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000146,
+            "timestamp": "2025-06-13T15:47:24.559510"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 0.702179,
+            "timestamp": "2025-06-13T15:47:25.262153",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.5
+          }
+        ],
+        "total_duration": 0.702325
+      },
+      "user_context": {
+        "current_query": "my name is mohammed",
+        "timestamp": "2025-06-13T15:47:24.559459",
+        "session_id": "session_80690903",
+        "query_length": 19,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:47:25.262298"
+    },
+    {
+      "query": "i want shoes",
+      "response": "The top shoe recommendations are: Red Running Shoes (SKU: SHOES-RED-001) for $79.99 and Blue Trail Shoes (SKU: SHOES-BLU-002) for $89.99.",
+      "intent": "recommend",
+      "confidence": 0.8666666666666667,
+      "agent_used": "Processed by RecommendAgent - Intent: recommend, Confidence: 0.87",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:47:37.789177",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000137,
+            "timestamp": "2025-06-13T15:47:37.790863"
+          },
+          {
+            "step": "agent_dispatch_RecommendAgent",
+            "duration": 9.032241,
+            "timestamp": "2025-06-13T15:47:46.823440",
+            "agent": "RecommendAgent",
+            "intent": "recommend",
+            "confidence": 0.8666666666666667
+          }
+        ],
+        "total_duration": 9.032378000000001
+      },
+      "user_context": {
+        "current_query": "i want shoes",
+        "timestamp": "2025-06-13T15:47:37.790823",
+        "session_id": "session_21608764",
+        "query_length": 12,
+        "query_complexity": 0.15,
+        "detected_entities": {},
+        "intent_confidence": 0.8666666666666667,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2,
+          "recommend": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:47:46.823615"
+    },
+    {
+      "query": "order SHOES-BLU-002",
+      "response": "Here are our available products:\n\n*   Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n*   Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n*   White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n*   Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n*   Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n*   Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.95,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.95, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:48:05.391389",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000348,
+            "timestamp": "2025-06-13T15:48:05.395307"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 2.985386,
+            "timestamp": "2025-06-13T15:48:08.381572",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 2.985734
+      },
+      "user_context": {
+        "current_query": "order SHOES-BLU-002",
+        "timestamp": "2025-06-13T15:48:05.395209",
+        "session_id": "session_-7928309",
+        "query_length": 19,
+        "query_complexity": 0.2,
+        "detected_entities": {
+          "product_codes": [
+            "SHOES-BLU"
+          ],
+          "numbers": [
+            "002"
+          ]
+        },
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "chat": 2,
+          "recommend": 1,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:48:08.381747"
+    },
+    {
+      "query": "SHOES-BLU-002, 1, mohammedzaloomai@gmail.com",
+      "response": "Order ccdb36f6-837b-45bc-b60b-30e32d065172 created successfully. The order is for one pair of Blue Trail Shoes, and the total amount is $89.99. The order status is currently pending.",
+      "intent": "order",
+      "confidence": 0.95,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.95, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:48:26.470265",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000103,
+            "timestamp": "2025-06-13T15:48:26.471670"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 3.311627,
+            "timestamp": "2025-06-13T15:48:29.783674",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 3.3117300000000003
+      },
+      "user_context": {
+        "current_query": "SHOES-BLU-002, 1, mohammedzaloomai@gmail.com",
+        "timestamp": "2025-06-13T15:48:26.471622",
+        "session_id": "user_231225305506078",
+        "query_length": 44,
+        "query_complexity": 0.35,
+        "detected_entities": {
+          "product_codes": [
+            "SHOES-BLU"
+          ],
+          "numbers": [
+            "002",
+            "1"
+          ],
+          "emails": [
+            "mohammedzaloomai@gmail.com"
+          ]
+        },
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "chat": 2,
+          "recommend": 1,
+          "order": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:48:29.783859"
+    },
+    {
+      "query": "what did i order",
+      "response": "Agent stopped due to iteration limit or time limit.",
+      "intent": "order",
+      "confidence": 0.8886075949367088,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.89, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:48:43.364775",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000195,
+            "timestamp": "2025-06-13T15:48:43.367240"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 1.485019,
+            "timestamp": "2025-06-13T15:48:44.852894",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.8886075949367088
+          }
+        ],
+        "total_duration": 1.485214
+      },
+      "user_context": {
+        "current_query": "what did i order",
+        "timestamp": "2025-06-13T15:48:43.367178",
+        "session_id": "session_89786532",
+        "query_length": 16,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.8886075949367088,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "chat": 2,
+          "recommend": 1,
+          "order": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:48:44.853979"
+    },
+    {
+      "query": "what is my name",
+      "response": "I do not have access to that information. I am a product recommendation assistant. How can I help you with product recommendations?",
+      "intent": "recommend",
+      "confidence": 0.65,
+      "agent_used": "Processed by RecommendAgent - Intent: recommend, Confidence: 0.65",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:49:02.763164",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000106,
+            "timestamp": "2025-06-13T15:49:02.764235"
+          },
+          {
+            "step": "agent_dispatch_RecommendAgent",
+            "duration": 3.025293,
+            "timestamp": "2025-06-13T15:49:05.789870",
+            "agent": "RecommendAgent",
+            "intent": "recommend",
+            "confidence": 0.65
+          }
+        ],
+        "total_duration": 3.025399
+      },
+      "user_context": {
+        "current_query": "what is my name",
+        "timestamp": "2025-06-13T15:49:02.764203",
+        "session_id": "session_-6340661",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.65,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2,
+          "recommend": 2,
+          "order": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:49:05.790827"
+    },
+    {
+      "query": "hi im mohammed",
+      "response": "Hi Mohammed, nice to meet you! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.50",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:50:57.601089",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000108,
+            "timestamp": "2025-06-13T15:50:57.603069"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.480098,
+            "timestamp": "2025-06-13T15:50:59.083538",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.5
+          }
+        ],
+        "total_duration": 1.480206
+      },
+      "user_context": {
+        "current_query": "hi im mohammed",
+        "timestamp": "2025-06-13T15:50:57.603034",
+        "session_id": "session_54638657",
+        "query_length": 14,
+        "query_complexity": 0.15,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 3,
+          "recommend": 2,
+          "order": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T15:50:59.083802"
+    },
+    {
+      "query": "what is my name",
+      "response": "I do not have access to that information. I am a product recommendation assistant. How can I help you with product recommendations?",
+      "intent": "recommend",
+      "confidence": 0.65,
+      "agent_used": "Processed by RecommendAgent - Intent: recommend, Confidence: 0.65",
+      "performance_metrics": {
+        "start_time": "2025-06-13T15:51:06.653161",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000235,
+            "timestamp": "2025-06-13T15:51:06.654398"
+          },
+          {
+            "step": "agent_dispatch_RecommendAgent",
+            "duration": 3.10968,
+            "timestamp": "2025-06-13T15:51:09.764436",
+            "agent": "RecommendAgent",
+            "intent": "recommend",
+            "confidence": 0.65
+          }
+        ],
+        "total_duration": 3.109915
+      },
+      "user_context": {
+        "current_query": "what is my name",
+        "timestamp": "2025-06-13T15:51:06.654313",
+        "session_id": "session_-6340661",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.65,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 3,
+          "recommend": 3,
+          "order": 3
+        },
+        "previous_intents": [
+          {
+            "intent": "recommend",
+            "timestamp": "2025-06-13T15:49:02.764203",
+            "confidence": 0.65,
+            "entities": {},
+            "query": "what is my name"
+          }
+        ],
+        "session_duration": 123.890123
+      },
+      "timestamp": "2025-06-13T15:51:09.764619"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 3,
+      "recommend": 3,
+      "order": 3
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 9,
+    "avg_response_time": 2.9159244444444443,
+    "max_response_time": 9.032378000000001,
+    "intent_distribution": {
+      "chat": 3,
+      "recommend": 3,
+      "order": 3
+    },
+    "requests_last_hour": 9
+  }
+}

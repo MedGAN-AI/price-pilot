@@ -6,8 +6,8 @@ llm:
 
 agent:
   type: "structured_chat"  # Uses structured chat for complex conversations
-  max_iterations: 10
-  early_stopping_method: "generate"
+  max_iterations: 5  # Reduced to prevent loops
+  early_stopping_method: "force"  # Fixed: changed from "generate" to "force"
   max_execution_time: 30
 
 specialized_config:

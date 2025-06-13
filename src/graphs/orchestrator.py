@@ -15,6 +15,9 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage
 
+# Import memory system
+from src.agents.ChatAgent.tools.memory_tools import ConversationMemory
+
 # Import each agent's compiled StateGraph
 from src.agents.ChatAgent.agent import shopping_assistant
 from src.agents.InventoryAgent.agent import inventory_assistant
@@ -27,12 +30,21 @@ from src.agents.OrderAgent.agent import order_agent_graph
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Global conversation memory instance
+global_memory = ConversationMemory()
+
 class IntentDetector:
     """Advanced intent detection with machine learning-like scoring"""
     
     def __init__(self):
         # Enhanced keyword patterns with weights
         self.intent_patterns = {
+            "chat": {
+                "primary": ["hello", "hi", "hey", "what is my", "my name", "who am i"],
+                "secondary": ["greet", "conversation", "talk", "tell me about", "remember"],
+                "context": ["name", "email", "preferences", "context", "memory"],
+                "weight": 1.0
+            },
             "inventory": {
                 "primary": ["stock", "inventory", "available", "in stock", "quantity"],
                 "secondary": ["how many", "units", "left", "remaining", "supply"],
@@ -351,6 +363,14 @@ def intent_router(state: OrchestrationState) -> OrchestrationState:
         # Enhanced context management
         user_context = context_manager.update_context(state, last_msg, intent_result)
         
+        # CRITICAL FIX: Update global memory with user input
+        # This ensures conversation history accumulates properly
+        global_memory.add_interaction(
+            user_input=last_msg,
+            agent_response="",  # Will be filled in dispatch
+            agent_used=f"{intent_result['intent'].capitalize()}Agent"
+        )
+        
         # Update conversation history with enriched data
         conversation_history = state.get("conversation_history", [])
         conversation_entry = {
@@ -419,8 +439,17 @@ def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
         selected_agent = agent_map.get(intent, shopping_assistant)
         agent_name = intent.capitalize() + "Agent"
         
+        # MEMORY FIX: Check if this is a memory-related query that should go to ChatAgent
+        query = state.get("messages", [])[-1].content if state.get("messages") else ""
+        memory_keywords = ["my name", "what is my", "who am i", "remember", "my email", "my preferences"]
+        if any(keyword in query.lower() for keyword in memory_keywords):
+            selected_agent = shopping_assistant
+            agent_name = "ChatAgent (memory query)"
+            confidence = max(confidence, 0.80)
+            logger.info(f"Memory-related query detected - routing to ChatAgent")
+        
         # Special handling for order-related queries
-        if user_context.get("is_order_request") or user_context.get("order_continuation"):
+        elif user_context.get("is_order_request") or user_context.get("order_continuation"):
             selected_agent = order_agent_graph
             agent_name = "OrderAgent"
             confidence = max(confidence, 0.85)  # Boost confidence for order continuations
@@ -463,6 +492,11 @@ def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
         
         logger.info(f"Dispatching to {agent_name} ({selection_reason})")
         
+        # DEBUG: Log the actual message being sent
+        if state.get("messages"):
+            actual_message = state["messages"][-1].content
+            logger.info(f"DEBUG: Message being sent to {agent_name}: '{actual_message}'")
+        
         # Prepare enhanced sub-state with full context
         sub_state = {
             "messages": state["messages"],
@@ -476,6 +510,14 @@ def smart_dispatch(state: OrchestrationState) -> OrchestrationState:
         # Invoke selected agent with enhanced error handling
         try:
             result = selected_agent.invoke(sub_state)
+            
+            # CRITICAL FIX: Update global memory with agent response
+            if hasattr(result, "get") and result.get("messages"):
+                agent_response = result["messages"][-1].content if result["messages"] else ""
+                # Update the last interaction in global memory with agent response
+                if global_memory.conversation_history:
+                    global_memory.conversation_history[-1]["agent_response"] = agent_response
+                    global_memory.conversation_history[-1]["agent_used"] = agent_name
             
             # Post-process result to maintain context
             if hasattr(result, "get") and result.get("messages"):
@@ -627,5 +669,25 @@ def monitored_invoke(state: OrchestrationState) -> OrchestrationState:
     performance_monitor.log_request(result)
     return result
 
+# Memory access functions for testing and debugging
+def get_global_memory() -> ConversationMemory:
+    """Get the global memory instance for testing/debugging"""
+    return global_memory
+
+def get_memory_stats() -> Dict[str, Any]:
+    """Get memory statistics for monitoring"""
+    return {
+        "conversation_history_length": len(global_memory.conversation_history),
+        "user_context_keys": list(global_memory.user_context.keys()),
+        "session_start": global_memory.session_metadata.get("session_start"),
+        "interaction_count": global_memory.session_metadata.get("interaction_count", 0)
+    }
+
+def reset_global_memory():
+    """Reset global memory (for testing purposes)"""
+    global global_memory
+    global_memory = ConversationMemory()
+
 # Export the monitored version
-__all__ = ["orchestrator", "initialize_state", "performance_monitor", "monitored_invoke"]
+__all__ = ["orchestrator", "initialize_state", "performance_monitor", "monitored_invoke", 
+           "get_global_memory", "get_memory_stats", "reset_global_memory", "context_manager"]

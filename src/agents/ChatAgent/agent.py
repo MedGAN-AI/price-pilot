@@ -52,7 +52,7 @@ agent_config = config.get("agent", {})
 specialized_config = config.get("specialized_config", {})
 
 build_config = {
-    "early_stopping_method": agent_config.get("early_stopping_method", "force"),
+    "early_stopping_method": agent_config.get("early_stopping_method", "force"),  # Fixed: use "force" instead of "generate"
     "max_execution_time": agent_config.get("max_execution_time", 60),
     "delegation_enabled": specialized_config.get("delegation_enabled", True),
     "memory_enabled": specialized_config.get("memory_enabled", True),
@@ -64,7 +64,7 @@ shopping_assistant = build_agent(
     tools=tools,
     prompt_template=system_prompt,
     max_iterations=agent_config.get("max_iterations", 10),
-    agent_type=AgentType.STRUCTURED_CHAT,
+    agent_type=AgentType.REACT,  # Changed from STRUCTURED_CHAT to REACT for better reliability
     agent_config=build_config
 )
 

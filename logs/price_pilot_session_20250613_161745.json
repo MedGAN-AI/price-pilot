@@ -1,0 +1,156 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T16:15:19.629695",
+    "export_time": "2025-06-13T16:17:45.992200",
+    "total_queries": 3,
+    "average_response_time": 1.2988952000935872
+  },
+  "conversation_history": [
+    {
+      "query": "hi, im mohammed",
+      "response": "Hi Mohammed, nice to meet you! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:16:40.971227",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000786,
+            "timestamp": "2025-06-13T16:16:41.003253"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 2.26258,
+            "timestamp": "2025-06-13T16:16:43.266751",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 2.263366
+      },
+      "user_context": {
+        "current_query": "hi, im mohammed",
+        "timestamp": "2025-06-13T16:16:41.003107",
+        "session_id": "session_84280151",
+        "query_length": 15,
+        "query_complexity": 0.15,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:16:43.266899"
+    },
+    {
+      "query": "what is my name",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:16:48.895272",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000105,
+            "timestamp": "2025-06-13T16:16:48.896147"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 0.791579,
+            "timestamp": "2025-06-13T16:16:49.688018",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 0.791684
+      },
+      "user_context": {
+        "current_query": "what is my name",
+        "timestamp": "2025-06-13T16:16:48.896115",
+        "session_id": "session_65589467",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:16:49.688171"
+    },
+    {
+      "query": "do you know my name",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:17:12.283207",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.002397,
+            "timestamp": "2025-06-13T16:17:12.312519"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 0.773601,
+            "timestamp": "2025-06-13T16:17:13.089982",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 0.775998
+      },
+      "user_context": {
+        "current_query": "do you know my name",
+        "timestamp": "2025-06-13T16:17:12.312016",
+        "session_id": "session_21486861",
+        "query_length": 19,
+        "query_complexity": 0.25,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:17:13.090285"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 3
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 3,
+    "avg_response_time": 1.277016,
+    "max_response_time": 2.263366,
+    "intent_distribution": {
+      "chat": 3
+    },
+    "requests_last_hour": 3
+  }
+}

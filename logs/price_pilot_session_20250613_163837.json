@@ -1,0 +1,203 @@
+{
+  "session_info": {
+    "start_time": "2025-06-13T16:35:26.846385",
+    "export_time": "2025-06-13T16:38:37.532262",
+    "total_queries": 4,
+    "average_response_time": 2.086658000946045
+  },
+  "conversation_history": [
+    {
+      "query": "hi",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:35:56.879698",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000961,
+            "timestamp": "2025-06-13T16:35:56.920293"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.612013,
+            "timestamp": "2025-06-13T16:35:58.533232",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 1.612974
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-13T16:35:56.920068",
+        "session_id": "session_-8811378",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:35:58.533821"
+    },
+    {
+      "query": "im mohammed",
+      "response": "Great to meet you, Mohammed!",
+      "intent": "chat",
+      "confidence": 0.5,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.50",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:36:02.759897",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000108,
+            "timestamp": "2025-06-13T16:36:02.760869"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 0.974097,
+            "timestamp": "2025-06-13T16:36:03.735288",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.5
+          }
+        ],
+        "total_duration": 0.974205
+      },
+      "user_context": {
+        "current_query": "im mohammed",
+        "timestamp": "2025-06-13T16:36:02.760834",
+        "session_id": "session_-8225633",
+        "query_length": 11,
+        "query_complexity": 0.1,
+        "detected_entities": {},
+        "intent_confidence": 0.5,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:36:03.735704"
+    },
+    {
+      "query": "what is my name",
+      "response": "Your name is mohammed.",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:36:11.925620",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000368,
+            "timestamp": "2025-06-13T16:36:11.927714"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 1.518934,
+            "timestamp": "2025-06-13T16:36:13.447129",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 1.519302
+      },
+      "user_context": {
+        "current_query": "what is my name",
+        "timestamp": "2025-06-13T16:36:11.927669",
+        "session_id": "session_70699229",
+        "query_length": 15,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "chat": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:36:13.447279"
+    },
+    {
+      "query": "i want to order shoes",
+      "response": "Here are our available products:\n\n• Red Running Shoes (SHOES-RED-001) - $79.99 - Lightweight red running shoes, sizes 7–12 available\n• Blue Trail Shoes (SHOES-BLU-002) - $89.99 - Durable blue trail shoes with rugged outsole\n• White Cotton T-Shirt (TSHIRT-WHT-003) - $19.99 - 100% cotton tee, unisex, sizes S–XL\n• Black Cotton T-Shirt (TSHIRT-BLK-004) - $19.99 - Classic black cotton tee, unisex, sizes S–XL\n• Green Baseball Cap (HAT-GRN-005) - $24.99 - Adjustable green baseball cap with embroidered logo\n• Multicolor Athletic Socks (SOCKS-MLT-006) - $12.99 - Set of 3 pairs: red/blue/black athletic socks, sizes M–L\n\nPlease let me know which items you'd like to order with quantities and your email address.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-13T16:36:44.317852",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000142,
+            "timestamp": "2025-06-13T16:36:44.319182"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 4.193019,
+            "timestamp": "2025-06-13T16:36:48.512623",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 4.193161
+      },
+      "user_context": {
+        "current_query": "i want to order shoes",
+        "timestamp": "2025-06-13T16:36:44.319135",
+        "session_id": "session_-5805851",
+        "query_length": 21,
+        "query_complexity": 0.25,
+        "detected_entities": {},
+        "intent_confidence": 0.7672131147540984,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "chat": 3,
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-13T16:36:48.512761"
+    }
+  ],
+  "session_statistics": {
+    "intents_detected": {
+      "chat": 3,
+      "order": 1
+    }
+  },
+  "user_preferences": {
+    "show_performance": false,
+    "show_intent_detection": true,
+    "auto_save_history": true,
+    "theme": "default"
+  },
+  "performance_data": {
+    "total_requests": 4,
+    "avg_response_time": 2.0749105,
+    "max_response_time": 4.193161,
+    "intent_distribution": {
+      "chat": 3,
+      "order": 1
+    },
+    "requests_last_hour": 4
+  }
+}

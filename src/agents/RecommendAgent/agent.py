@@ -20,6 +20,9 @@ from src.core import (
 # Import recommendation tools
 from src.agents.RecommendAgent.tools.recommend_tool import recommend_tool
 
+# Import memory tools for user context access
+from src.agents.ChatAgent.tools.memory_tools import memory_tools
+
 # Load and standardize configuration
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.yaml")
 raw_config = load_config(CONFIG_PATH)
@@ -32,7 +35,7 @@ llm = create_llm_from_config(config)
 error_handler = create_agent_error_handler("RecommendAgent")
 
 # Setup tools
-tools = [recommend_tool]
+tools = [recommend_tool] + memory_tools
 
 # Load prompt template
 PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "recommend_prompt.txt")

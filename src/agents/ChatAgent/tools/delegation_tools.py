@@ -66,6 +66,11 @@ def delegate_to_recommend_agent(request: str) -> str:
     Delegate recommendation requests to RecommendAgent.
     Handles product discovery, recommendations, search.
     """
+    # FIXED: Prevent simple greetings from triggering product searches
+    greeting_phrases = ["hi", "hello", "hey", "howdy", "hiya", "greetings"]
+    if request.lower().strip() in greeting_phrases:
+        return "I'm here to help. Feel free to ask about our products or services!"
+        
     try:
         # Initialize RecommendAgent state
         state = recommend_init_state()

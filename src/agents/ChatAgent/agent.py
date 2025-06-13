@@ -90,7 +90,8 @@ class ChatAgent:
             if chat_history:
                 state["context"] = {"conversation_context": chat_history}
             
-            # Add user message
+            # FIXED: Ensure we're using the exact user input, not any hardcoded examples
+            # Add user message directly without modification
             state["messages"] = [HumanMessage(content=query)]
             
             # Invoke agent

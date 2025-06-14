@@ -7,8 +7,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-    env_file:
-      - ./backend/.env
+    # local development
+    #env_file 
+    #  - ./backend/.env
 
   frontend:
     build:

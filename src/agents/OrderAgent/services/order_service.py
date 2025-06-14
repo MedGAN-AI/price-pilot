@@ -12,7 +12,7 @@ from contextlib import contextmanager
 
 from supabase import create_client, Client
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, EmailStr, validator, ValidationError
+from pydantic import BaseModel, Field, EmailStr, field_validator, ValidationError
 
 load_dotenv()
 
@@ -26,7 +26,8 @@ class OrderItemCreate(BaseModel):
     sku: str = Field(..., min_length=1, max_length=255)
     quantity: int = Field(..., gt=0, le=1000)
     
-    @validator('sku')
+    @field_validator('sku')
+    @classmethod
     def validate_sku(cls, v):
         return v.strip().upper()
 

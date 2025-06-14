@@ -145,17 +145,49 @@ def create_order_tool_func(*args, **kwargs) -> str:
             "message": f"Failed to create order: {str(e)}"
         })
 
-def check_order_status_tool_func(order_id: str) -> str:
+def check_order_status_tool_func(*args, **kwargs) -> str:
     """
     Check the status and details of an order.
+    Handles both direct calls and LangChain parameter passing.
     
     Args:
-        order_id: The order ID to check
+        Can receive parameters as:
+        1. check_order_status_tool_func(order_id) - direct call
+        2. check_order_status_tool_func(json_string) - LangChain JSON call
+        3. check_order_status_tool_func(**kwargs) - keyword arguments
     
     Returns:
         JSON string with order details
     """
     try:
+        # Handle different parameter passing styles
+        order_id = None
+        
+        if len(args) == 1:
+            # Could be direct order_id or JSON string
+            if isinstance(args[0], str):
+                # Check if it's a JSON string
+                if args[0].startswith('{'):
+                    try:
+                        data = json.loads(args[0])
+                        order_id = data.get('order_id')
+                    except json.JSONDecodeError:
+                        # Not JSON, treat as order_id
+                        order_id = args[0]
+                else:
+                    # Direct order_id
+                    order_id = args[0]
+        elif kwargs:
+            # Keyword arguments
+            order_id = kwargs.get('order_id')
+        
+        if not order_id:
+            return json.dumps({
+                "success": False,
+                "error": "Missing order_id",
+                "message": "Order ID is required to check status"
+            })
+        
         result = order_service.get_order_status(order_id)
         return json.dumps(result, indent=2)
     except Exception as e:
@@ -166,18 +198,54 @@ def check_order_status_tool_func(order_id: str) -> str:
         })
 
 
-def update_order_status_tool_func(order_id: str, new_status: str) -> str:
+def update_order_status_tool_func(*args, **kwargs) -> str:
     """
     Update the status of an order.
+    Handles both direct calls and LangChain parameter passing.
     
     Args:
-        order_id: The order ID to update
-        new_status: New status (pending, confirmed, processing, shipped, delivered, cancelled)
+        Can receive parameters as:
+        1. update_order_status_tool_func(order_id, new_status) - direct call
+        2. update_order_status_tool_func(json_string) - LangChain JSON call
+        3. update_order_status_tool_func(**kwargs) - keyword arguments
     
     Returns:
         JSON string with update result
     """
     try:
+        # Handle different parameter passing styles
+        order_id = None
+        new_status = None
+        
+        if len(args) == 2:
+            # Direct call with 2 parameters
+            order_id, new_status = args
+        elif len(args) == 1 and isinstance(args[0], str):
+            # LangChain passing JSON as single string argument
+            if args[0].startswith('{'):
+                try:
+                    data = json.loads(args[0])
+                    order_id = data.get('order_id')
+                    new_status = data.get('new_status')
+                except json.JSONDecodeError:
+                    # Not JSON, treat as order_id only
+                    order_id = args[0]
+                    new_status = kwargs.get('new_status')
+            else:
+                order_id = args[0]
+                new_status = kwargs.get('new_status')
+        elif kwargs:
+            # Keyword arguments
+            order_id = kwargs.get('order_id')
+            new_status = kwargs.get('new_status')
+        
+        if not order_id or not new_status:
+            return json.dumps({
+                "success": False,
+                "error": "Missing parameters",
+                "message": "Both order_id and new_status are required"
+            })
+        
         result = order_service.update_order_status(order_id, new_status)
         return json.dumps(result, indent=2)
     except Exception as e:
@@ -188,7 +256,57 @@ def update_order_status_tool_func(order_id: str, new_status: str) -> str:
         })
 
 
-def cancel_order_tool_func(order_id: str) -> str:
+def cancel_order_tool_func(*args, **kwargs) -> str:
+    """
+    Cancel an order (only if not yet shipped).
+    Handles both direct calls and LangChain parameter passing.
+    
+    Args:
+        Can receive parameters as:
+        1. cancel_order_tool_func(order_id) - direct call
+        2. cancel_order_tool_func(json_string) - LangChain JSON call
+        3. cancel_order_tool_func(**kwargs) - keyword arguments
+    
+    Returns:
+        JSON string with cancellation result
+    """
+    try:
+        # Handle different parameter passing styles
+        order_id = None
+        
+        if len(args) == 1:
+            # Could be direct order_id or JSON string
+            if isinstance(args[0], str):
+                # Check if it's a JSON string
+                if args[0].startswith('{'):
+                    try:
+                        data = json.loads(args[0])
+                        order_id = data.get('order_id')
+                    except json.JSONDecodeError:
+                        # Not JSON, treat as order_id
+                        order_id = args[0]
+                else:
+                    # Direct order_id
+                    order_id = args[0]
+        elif kwargs:
+            # Keyword arguments
+            order_id = kwargs.get('order_id')
+        
+        if not order_id:
+            return json.dumps({
+                "success": False,
+                "error": "Missing order_id",
+                "message": "Order ID is required to cancel order"
+            })
+        
+        result = order_service.cancel_order(order_id)
+        return json.dumps(result, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "success": False,
+            "error": str(e),
+            "message": f"Failed to cancel order: {str(e)}"
+        })
     """
     Cancel an order (only if not yet shipped).
     

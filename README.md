@@ -99,7 +99,7 @@ price-pilot/
 - **Smart Recommendations**: AI-driven product suggestion engine
 - **Vector Search**: Embedding-based product discovery
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 **Backend:**
 - Python 3.12 with FastAPI

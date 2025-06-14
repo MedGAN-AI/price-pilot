@@ -1,3 +1,6 @@
+[![Docker Image CI (ghcr)](https://github.com/MedGAN-AI/price-pilot/actions/workflows/ghcr.yml/badge.svg)](https://github.com/MedGAN-AI/price-pilot/actions/workflows/ghcr.yml)
+[![Docker Image CI (dh)](https://github.com/MedGAN-AI/price-pilot/actions/workflows/main.yml/badge.svg)](https://github.com/MedGAN-AI/price-pilot/actions/workflows/main.yml)
+
 # Price Pilot
 
 An intelligent multi-agent system for e-commerce operations, featuring AI-powered chat, inventory management, order processing, logistics tracking, demand forecasting, and product recommendations.

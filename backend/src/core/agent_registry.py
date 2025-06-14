@@ -19,7 +19,25 @@ class AgentRegistry:
     No manual configuration required - agents self-register
     """
     
-    def __init__(self, agents_path: str = "src/agents"):
+    def __init__(self, agents_path: str = None):
+        # Auto-detect the correct agents path
+        if agents_path is None:
+            # Try different possible paths
+            possible_paths = [
+                "backend/src/agents",  # From project root
+                "src/agents",          # From backend directory
+                os.path.join(os.path.dirname(__file__), "..", "agents")  # Relative to this file
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    agents_path = path
+                    break
+            
+            if agents_path is None:
+                # Last resort - try to find it relative to this file
+                agents_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "agents")
+        
         self.agents_path = agents_path
         self.registered_agents: Dict[str, Dict[str, Any]] = {}
         self.intent_mappings: Dict[str, str] = {}

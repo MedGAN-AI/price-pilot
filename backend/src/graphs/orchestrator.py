@@ -34,9 +34,25 @@ logger = logging.getLogger(__name__)
 global_memory = ConversationMemory()
 
 class IntentDetector:
-    """Advanced intent detection with machine learning-like scoring"""
+    """Gemini-powered intent detection with fallback to keyword-based detection"""
     
     def __init__(self):
+        # Try to initialize Gemini detector
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+            from core.gemini_intent_detector import GeminiIntentDetector
+            self.gemini_detector = GeminiIntentDetector()
+            self.use_gemini = True
+            print("✅ Using Gemini-powered intent detection")
+        except Exception as e:
+            print(f"⚠️ Gemini detector not available, using keyword fallback: {e}")
+            self.use_gemini = False
+            self._init_keyword_patterns()
+    
+    def _init_keyword_patterns(self):
+        """Initialize keyword-based fallback patterns"""
         # Enhanced keyword patterns with weights
         self.intent_patterns = {
             "chat": {
@@ -75,15 +91,35 @@ class IntentDetector:
                 "context": ["what will", "expected", "anticipated"],
                 "weight": 0.9
             }
-        }
-          # Cache for performance
+        }        # Cache for performance
         self._intent_cache = {}
         self._cache_expiry = {}
         self.cache_ttl = timedelta(minutes=5)
     
     def detect_intent(self, text: str) -> Dict[str, Any]:
         """
-        Enhanced intent detection with semantic understanding and better confidence scoring
+        Gemini-powered intent detection with keyword fallback
+        """
+        if self.use_gemini:
+            try:
+                # Use Gemini detector
+                result = self.gemini_detector.detect_intent(text)
+                return {
+                    "intent": result["intent"],
+                    "confidence": result["confidence"],
+                    "method": "gemini",
+                    "timestamp": result["timestamp"]
+                }
+            except Exception as e:
+                print(f"⚠️ Gemini detection failed, using keyword fallback: {e}")
+                # Fall through to keyword detection
+        
+        # Keyword-based fallback detection
+        return self._keyword_detect_intent(text)
+    
+    def _keyword_detect_intent(self, text: str) -> Dict[str, Any]:
+        """
+        Fallback keyword-based intent detection
         """
         # Check cache first
         cache_key = hash(text.lower().strip())

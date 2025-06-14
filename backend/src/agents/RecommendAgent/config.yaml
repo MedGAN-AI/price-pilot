@@ -14,7 +14,7 @@ agent:
 specialized_config:
   # RecommendAgent specific configurations
   embedding_provider: "google-genai-embeddings"
-  embedding_model: "gemini-embedding-exp-03-07"
+  embedding_model: "models/text-embedding-004"
   vector_store: "supabase"
   supabase_table_embeddings: "product_embeddings"
   top_k: 5

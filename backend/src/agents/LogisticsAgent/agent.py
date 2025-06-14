@@ -41,7 +41,7 @@ error_handler = create_agent_error_handler("LogisticsAgent")
 tools = create_logistics_tools()
 
 # Load prompt template
-PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "logistics_prompt_clean.txt")
+PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "logistics_prompt.txt")
 with open(PROMPT_PATH, "r", encoding="utf-8") as f:
     system_prompt = f.read()
 

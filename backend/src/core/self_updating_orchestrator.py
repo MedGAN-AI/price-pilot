@@ -1,6 +1,7 @@
 """
 Self-Updating Orchestrator
 Automatically adapts to agent changes without manual configuration
+Enhanced with semantic intent detection for better accuracy
 """
 import sys
 import os
@@ -13,31 +14,101 @@ import logging
 
 # Add the backend directory to the path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the backend/src directory to the path  
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
-from src.core.agent_registry import AgentRegistry, get_agent_registry
-from src.graphs.orchestrator import IntentDetector, ContextManager
+try:
+    from src.core.agent_registry import AgentRegistry, get_agent_registry
+except ImportError:
+    from .agent_registry import AgentRegistry, get_agent_registry
+
+try:
+    from src.core.gemini_intent_detector import GeminiIntentDetector
+except ImportError:
+    from .gemini_intent_detector import GeminiIntentDetector
+
+try:
+    from src.graphs.orchestrator import ContextManager
+except ImportError:
+    # Fallback if ContextManager is not available
+    ContextManager = None
 
 logger = logging.getLogger(__name__)
+
+class FallbackIntentDetector:
+    """
+    Fallback intent detector using keyword patterns
+    Used when semantic detection is unavailable
+    """
+    
+    def __init__(self, agent_registry: AgentRegistry, config: Dict[str, Any]):
+        self.agent_registry = agent_registry
+        self.config = config
+        
+        # Basic keyword patterns for each intent
+        self.intent_patterns = {
+            "order": ["buy", "purchase", "order", "want", "need", "get", "checkout", "cart"],
+            "inventory": ["stock", "available", "inventory", "how many", "in stock", "quantity"],
+            "recommend": ["recommend", "suggest", "best", "show", "good", "help find", "what should"],
+            "logistics": ["track", "shipment", "delivery", "where", "when", "arrive", "shipping"],
+            "forecast": ["predict", "forecast", "analytics", "trends", "outlook", "projections"],
+            "chat": ["hello", "hi", "thanks", "thank you", "name", "what can you", "help"]
+        }
+    
+    def detect_intent(self, query: str) -> Dict[str, Any]:
+        """Basic keyword-based intent detection"""
+        lower_query = query.lower()
+        
+        # Score each intent based on keyword matches
+        scores = {}
+        for intent, keywords in self.intent_patterns.items():
+            score = sum(1 for keyword in keywords if keyword in lower_query)
+            if score > 0:
+                scores[intent] = score / len(keywords)  # Normalize by keyword count
+        
+        if scores:
+            best_intent = max(scores, key=scores.get)
+            confidence = min(scores[best_intent] * 2, 0.8)  # Scale confidence
+            
+            return {
+                "intent": best_intent,
+                "confidence": confidence,
+                "method": "keyword_fallback",
+                "reason": f"Keyword match with score {scores[best_intent]:.2f}",
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        # Default to chat
+        return {
+            "intent": "chat",
+            "confidence": 0.5,
+            "method": "keyword_fallback",
+            "reason": "No keywords matched, defaulting to chat",
+            "timestamp": datetime.now().isoformat()
+        }
+
 
 class SelfUpdatingOrchestrator:
     """
     Orchestrator that automatically adapts to agent changes
-    No manual configuration needed - everything is dynamic
+    Enhanced with semantic intent detection for superior accuracy
     """
     
     def __init__(self, config_path: Optional[str] = None):
         self.config_path = config_path or "src/core/orchestrator_config.yaml"
         self.config = self._load_config()
-        
-        # Initialize components
+          # Initialize components with semantic enhancement
         self.agent_registry = get_agent_registry()
-        self.intent_detector = self._create_dynamic_intent_detector()
+        
+        # Initialize intent detection (semantic first, fallback if unavailable)
+        self.intent_detector = self._create_intent_detector()
+        
         self.context_manager = ContextManager()
         
         # Track configuration changes
         self._last_config_check = datetime.now()
         
-        logger.info("🚀 Self-Updating Orchestrator initialized")
+        logger.info("🚀 Self-Updating Orchestrator initialized with semantic detection")
     
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration with defaults"""
@@ -51,17 +122,14 @@ class SelfUpdatingOrchestrator:
                 "max_retries": 3,
                 "timeout_seconds": 30,
                 "circuit_breaker_enabled": True
-            },
-            "custom_intent_patterns": {},
+            },            "custom_intent_patterns": {},
             "agent_preferences": {}
         }
         
         if os.path.exists(self.config_path):
             try:
                 with open(self.config_path, 'r') as f:
-                    user_config = yaml.safe_load(f)
-                    
-                # Merge user config with defaults
+                    user_config = yaml.safe_load(f)                # Merge user config with defaults
                 merged_config = {**default_config}
                 if user_config:
                     merged_config.update(user_config)
@@ -69,15 +137,26 @@ class SelfUpdatingOrchestrator:
                 return merged_config
             except Exception as e:
                 logger.warning(f"Failed to load config: {e}. Using defaults.")
-        
+                
         return default_config
     
-    def _create_dynamic_intent_detector(self) -> 'DynamicIntentDetector':
-        """Create intent detector that adapts to available agents"""
-        return DynamicIntentDetector(
+    def _create_intent_detector(self):
+        """Create the Gemini intent detector"""
+        try:
+            # Use Gemini detector
+            gemini_detector = GeminiIntentDetector()
+            logger.info("✅ Using Gemini intent detection")
+            return gemini_detector
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini detector: {e}")
+            logger.info("🔄 Falling back to keyword-based detection")
+            return self._create_fallback_detector()
+    
+    def _create_fallback_detector(self) -> FallbackIntentDetector:
+        """Create fallback intent detector for when semantic detection fails"""
+        return FallbackIntentDetector(
             agent_registry=self.agent_registry,
-            config=self.config["intent_detection"],
-            custom_patterns=self.config.get("custom_intent_patterns", {})
+            config=self.config["intent_detection"]
         )
     
     def process_query(self, query: str, session_id: Optional[str] = None) -> Dict[str, Any]:
@@ -178,7 +257,7 @@ class SelfUpdatingOrchestrator:
             if config_mtime > self._last_config_check.timestamp():
                 logger.info("🔄 Configuration updated, reloading...")
                 self.config = self._load_config()
-                self.intent_detector = self._create_dynamic_intent_detector()
+                self.intent_detector = self._create_intent_detector()
                 self._last_config_check = datetime.now()
         
         # Could add agent file monitoring here
@@ -205,12 +284,23 @@ Please try rephrasing your request, and I'll do my best to assist you!"""
                 "intent_threshold": self.config["intent_detection"]["confidence_threshold"]
             },
             "agent_registry": self.agent_registry.get_registry_info(),
-            "agent_status": self.agent_registry.get_all_agents_status(),
-            "intent_detector": {
-                "type": "dynamic",
-                "patterns_loaded": len(self.intent_detector.intent_patterns)
-            }
+            "agent_status": self.agent_registry.get_all_agents_status(),            "intent_detector": {
+                "type": type(self.intent_detector).__name__,
+                "status": "✅ Active",
+                "info": self._get_detector_info()            }
         }
+    
+    def _get_detector_info(self):
+        """Get information about the current intent detector"""
+        try:
+            if hasattr(self.intent_detector, 'intent_patterns'):
+                # Fallback detector
+                return {"patterns_loaded": len(self.intent_detector.intent_patterns)}
+            else:
+                # Gemini detector
+                return {"model": "text-embedding-004", "embedding_based": True}
+        except Exception:
+            return {"status": "unknown"}
     
     def reload_system(self):
         """Reload entire system (for development)"""
@@ -225,7 +315,7 @@ Please try rephrasing your request, and I'll do my best to assist you!"""
         
         # Recreate components
         self.agent_registry = get_agent_registry()
-        self.intent_detector = self._create_dynamic_intent_detector()
+        self.intent_detector = self._create_intent_detector()
         
         logger.info("✅ System reloaded successfully")
 

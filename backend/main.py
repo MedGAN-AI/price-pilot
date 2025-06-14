@@ -20,12 +20,18 @@ from pydantic import BaseModel, Field
 # Import self-updating orchestrator system
 from src.core.self_updating_orchestrator import get_orchestrator, reload_orchestrator
 from src.core.agent_registry import get_agent_registry
+from src.core.gemini_intent_detector import GeminiIntentDetector
 from src.agents.ChatAgent.tools.memory_tools import conversation_memory
 from langchain_core.messages import HumanMessage, SystemMessage
 
 # Initialize self-updating orchestrator
 orchestrator = get_orchestrator()
 agent_registry = get_agent_registry()
+
+# Helper function for the new intent detector
+def get_gemini_detector():
+    """Get the new Gemini intent detector"""
+    return GeminiIntentDetector()
 
 # Configure logging
 logging.basicConfig(
@@ -57,6 +63,25 @@ class HealthResponse(BaseModel):
     timestamp: str
     version: str
     agents_status: Dict[str, str]
+
+class FeedbackRequest(BaseModel):
+    query: str = Field(..., description="Original user query")
+    predicted_intent: str = Field(..., description="System's predicted intent")
+    actual_intent: str = Field(..., description="User's corrected intent")
+    confidence: float = Field(..., description="System's confidence level")
+    user_rating: Optional[int] = Field(None, description="User rating (1-5 stars)", ge=1, le=5)
+    feedback_notes: Optional[str] = Field(None, description="Optional user feedback notes")
+
+class FeedbackResponse(BaseModel):
+    success: bool = Field(..., description="Whether feedback was collected successfully")
+    message: str = Field(..., description="Response message")
+
+class AnalyticsResponse(BaseModel):
+    period: str = Field(..., description="Analytics period")
+    overall_accuracy: float = Field(..., description="Overall prediction accuracy")
+    total_feedback_entries: int = Field(..., description="Total feedback entries")
+    intent_performance: Dict[str, Any] = Field(..., description="Performance by intent")
+    improvement_suggestions: List[Dict[str, Any]] = Field(..., description="Improvement suggestions")
 
 # Application lifecycle management
 @asynccontextmanager
@@ -250,6 +275,159 @@ async def get_system_config():
     except Exception as e:
         logger.error(f"Agents status error: {e}")
         raise HTTPException(status_code=500, detail=f"Error getting agent status: {str(e)}")
+
+# ==================== FEEDBACK COLLECTION ENDPOINTS ====================
+
+@app.post("/feedback/collect", response_model=FeedbackResponse)
+async def collect_feedback(feedback: FeedbackRequest):
+    """
+    Collect user feedback for intent prediction improvement
+    """
+    try:
+        gemini_detector = get_gemini_detector()
+        
+        success = gemini_detector.collect_feedback(
+            query=feedback.query,
+            predicted_intent=feedback.predicted_intent,
+            actual_intent=feedback.actual_intent,
+            confidence=feedback.confidence,
+            user_rating=feedback.user_rating,
+            feedback_notes=feedback.feedback_notes
+        )
+        
+        if success:
+            logger.info(f"✅ Feedback collected for query: '{feedback.query[:50]}...'")
+            return FeedbackResponse(
+                success=True,
+                message="Feedback collected successfully. Thank you for helping us improve!"
+            )
+        else:
+            return FeedbackResponse(
+                success=False,
+                message="Failed to collect feedback. Please try again."
+            )
+            
+    except Exception as e:
+        logger.error(f"Failed to collect feedback: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to collect feedback: {str(e)}")
+
+@app.get("/feedback/analytics", response_model=AnalyticsResponse)
+async def get_feedback_analytics():
+    """
+    Get comprehensive feedback analytics and performance metrics
+    """
+    try:
+        gemini_detector = get_gemini_detector()
+        analytics = gemini_detector.get_feedback_analytics()
+        
+        if analytics.get("status") == "No feedback data available":
+            return AnalyticsResponse(
+                period="No data",
+                overall_accuracy=0.0,
+                total_feedback_entries=0,
+                intent_performance={},
+                improvement_suggestions=[{
+                    "issue": "No feedback data available",
+                    "suggestion": "Start collecting user feedback to enable analytics",
+                    "priority": "high"
+                }]
+            )
+        
+        return AnalyticsResponse(
+            period=analytics.get("period", "Unknown"),
+            overall_accuracy=analytics.get("overall_accuracy", 0.0),
+            total_feedback_entries=analytics.get("total_feedback_entries", 0),
+            intent_performance=analytics.get("intent_performance", {}),
+            improvement_suggestions=analytics.get("improvement_suggestions", [])
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to get analytics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
+
+@app.post("/feedback/optimize")
+async def auto_optimize_system():
+    """
+    Automatically optimize the system based on collected feedback
+    """
+    try:
+        gemini_detector = get_gemini_detector()
+        optimization_results = gemini_detector.auto_optimize_from_feedback()
+        
+        logger.info("🔧 System optimization completed")
+        return {
+            "success": True,
+            "message": "System optimization completed",
+            "optimization_results": optimization_results
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to optimize system: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to optimize system: {str(e)}")
+
+@app.get("/feedback/stats")
+async def get_feedback_stats():
+    """
+    Get basic feedback statistics
+    """
+    try:
+        gemini_detector = get_gemini_detector()
+        stats = gemini_detector.get_performance_stats()
+        
+        return {
+            "success": True,
+            "stats": stats
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get feedback stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
+
+# ==================== GEMINI DETECTOR ENDPOINTS ====================
+
+@app.get("/detector/status")
+async def get_detector_status():
+    """
+    Get Gemini detector status and configuration
+    """
+    try:
+        gemini_detector = get_gemini_detector()
+        stats = gemini_detector.get_performance_stats()
+        
+        return {
+            "detector_type": "Gemini Embeddings",
+            "model": stats.get("gemini_model", "text-embedding-004"),
+            "status": "active",
+            "similarity_threshold": stats.get("similarity_threshold", 0.4),
+            "intents_configured": stats.get("intents_configured", 0),
+            "total_predictions": stats.get("total_predictions", 0),
+            "feedback_entries": stats.get("total_feedback_entries", 0),
+            "recent_accuracy": stats.get("recent_accuracy"),
+            "learning_enabled": stats.get("learning_enabled", True)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get detector status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get detector status: {str(e)}")
+
+@app.post("/detector/reload")
+async def reload_detector():
+    """
+    Reload the Gemini detector system
+    """
+    try:
+        gemini_detector = get_gemini_detector()
+        gemini_detector.reload_system()
+        
+        logger.info("🔄 Gemini detector reloaded")
+        return {
+            "success": True,
+            "message": "Gemini detector reloaded successfully"
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to reload detector: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reload detector: {str(e)}")
 
 # Root endpoint
 @app.get("/")

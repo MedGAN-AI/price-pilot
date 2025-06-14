@@ -1,0 +1,2 @@
+*.ipynb linguist-language=Python
+models/**/*.pth filter=lfs diff=lfs merge=lfs -text

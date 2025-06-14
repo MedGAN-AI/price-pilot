@@ -72,8 +72,17 @@ Observation: the result of the action
 Thought: I now know the final answer
 Final Answer: the final answer to the original input question
 
+CRITICAL FORMAT RULES:
+- ALWAYS follow the Thought/Action/Action Input/Observation format
+- NEVER provide a direct response without going through the format
+- If you need more information from the user, use Thought then Final Answer
+- If unsure about parameters, think through available tools and provide helpful Final Answer
+
 IMPORTANT: For create_order action, use JSON format like this:
 {{"customer_email": "john@example.com", "customer_name": "John Doe", "items": "[{{\"sku\":\"ABC123\",\"quantity\":2}}]"}}
+
+For check_order_status action, use this format:
+{{"order_id": "12345-67890"}}
 
 CRITICAL EXAMPLE - When customer says "I want to order":
 1. Call get_available_products ONCE
@@ -81,6 +90,10 @@ CRITICAL EXAMPLE - When customer says "I want to order":
 3. **NEVER** call get_available_products again - one call is enough
 
 **TOOL USAGE LIMIT**: Maximum 3 tool calls per conversation. After 3 calls, provide final answer regardless.
+
+CRITICAL EXAMPLE - When customer asks about order status without providing order ID:
+Thought: The customer wants to check order status but hasn't provided an order ID. I need to ask them for it.
+Final Answer: To check your order status, please provide your order ID. Order IDs are typically in UUID format like 61e3a030-00b3-4133-97bd-74db4a88fa22.
 
 {agent_scratchpad}
 

@@ -1,0 +1,40 @@
+name: Docker Image CI (dh)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Authenticate to Docker hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v3
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: mozaloom/price-pilot-backend:latest
+        build-args: |
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+          GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+
+    - name: Build & push frontend image
+      uses: docker/build-push-action@v3
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile.dev
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/price-pilot-frontend:latest
+

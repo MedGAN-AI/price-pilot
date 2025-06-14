@@ -1,16 +1,24 @@
 services:
-  pricepilot:
-    image: pricepilot
+  backend:
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - 8000:8000
-    environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - DEMAND_MODEL_PATH=models/demand_forecast.joblib
-      - ELASTICITY_MODEL_PATH=models/price_elasticity.joblib
+      - "8000:8000"
     volumes:
-      - ./data:/app/data
-      - ./models:/app/models
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # bind your source so edits live‑reload in Vite:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend

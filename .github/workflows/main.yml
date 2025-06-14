@@ -30,3 +30,11 @@ jobs:
           SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
           GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
 
+    - name: Build & push frontend image
+      uses: docker/build-push-action@v3
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile.dev
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/price-pilot-frontend:latest
+

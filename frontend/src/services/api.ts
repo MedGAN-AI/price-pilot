@@ -6,7 +6,7 @@ const API_BASE_URL = 'http://localhost:8000';
 // Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 seconds timeout for complex agent queries
+  timeout: 120000, // 2 minutes timeout for complex agent queries
   headers: {
     'Content-Type': 'application/json',
   },
@@ -90,8 +90,8 @@ export interface ApiError {
 // Retry utility function
 const retryRequest = async <T>(
   requestFn: () => Promise<T>,
-  maxRetries: number = 2,
-  delay: number = 1000
+  maxRetries: number = 5, // Increased from 2 to 5 retries
+  delay: number = 2000 // Increased initial delay to 2 seconds
 ): Promise<T> => {
   let lastError: Error;
   
@@ -121,13 +121,12 @@ export const apiService = {
       return response.data;
     });
   },
-
   // Send message to ChatAgent with retry
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     return retryRequest(async () => {
       const response = await apiClient.post<ChatResponse>('/chat', request);
       return response.data;
-    }, 1); // Only 1 retry for chat to avoid duplicate messages
+    }, 3); // Increased from 1 to 3 retries for chat messages
   },
 
   // Get API info

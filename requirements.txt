@@ -12,6 +12,8 @@ numpy
 datetime
 python-dotenv
 transformers
+pyyaml
+requests
 scikit-learn
 yellowbrick
 seaborn

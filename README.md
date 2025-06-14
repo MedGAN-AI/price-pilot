@@ -5,7 +5,7 @@
 
 An intelligent multi-agent system for e-commerce operations, featuring AI-powered chat, inventory management, order processing, logistics tracking, demand forecasting, and product recommendations.
 
-## 🏗️ Architecture
+##  Architecture
 
 Price Pilot consists of specialized AI agents that work together to handle different aspects of e-commerce operations:
 
@@ -16,7 +16,7 @@ Price Pilot consists of specialized AI agents that work together to handle diffe
 - **ForecastAgent**: Demand prediction using ARIMA models
 - **RecommendAgent**: AI-powered product recommendations
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Python 3.12+
@@ -73,7 +73,7 @@ npm install
 npm run dev
 ```
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 price-pilot/
@@ -88,7 +88,7 @@ price-pilot/
 └── sql/              # Database schemas
 ```
 
-## 🔧 Key Features
+##  Key Features
 
 - **Multi-Agent AI System**: Specialized agents for different business functions
 - **Real-time Chat Interface**: Natural language interaction with the system
@@ -118,13 +118,13 @@ price-pilot/
 - Docker Compose for local development
 - Modular deployment architecture
 
-## 📊 Monitoring & Logging
+##  Monitoring & Logging
 
 - Application logs in `backend/app.log`
 - Shipment monitoring database
 - LangChain caching for performance optimization
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -132,7 +132,7 @@ price-pilot/
 4. Run tests: `make test`
 5. Submit a pull request
 
-## 📄 License
+##  License
 
 This project is licensed under the terms specified in the LICENSE file.
 

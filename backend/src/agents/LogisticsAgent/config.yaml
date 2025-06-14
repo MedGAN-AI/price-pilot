@@ -1,0 +1,23 @@
+llm:
+  provider: google-genai
+  model: gemini-2.0-flash
+  temperature: 0.0
+
+agent:
+  type: react
+  max_iterations: 10
+  early_stopping_method: force
+  max_execution_time: 30
+
+specialized_config:
+  delay_threshold_hours: 4
+  preferred_carriers:
+    - aramex
+    - naqel
+  auto_detect_carrier: true
+  context_key: logistics_context
+  
+logistics_settings:
+  enable_tracking: true
+  enable_rerouting: true
+  enable_analytics: true

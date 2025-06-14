@@ -1,0 +1,32 @@
+# RecommendAgent Configuration - Standardized Core Format
+
+llm:
+  provider: "google-genai"
+  model: "gemini-2.0-flash"
+  temperature: 0.0
+
+agent:
+  type: "react"  # Uses ReAct pattern for product recommendations
+  max_iterations: 10
+  early_stopping_method: "generate"
+  max_execution_time: 30
+
+specialized_config:
+  # RecommendAgent specific configurations
+  embedding_provider: "google-genai-embeddings"
+  embedding_model: "gemini-embedding-exp-03-07"
+  vector_store: "supabase"
+  supabase_table_embeddings: "product_embeddings"
+  top_k: 5
+  context_key: "recommendation_context"
+  
+  # Recommendation settings
+  similarity_threshold: 0.7
+  enable_personalization: true
+  cache_embeddings: true
+  
+# Agent-specific settings
+recommendation_settings:
+  max_recommendations: 10
+  include_price_range: true
+  include_similarity_scores: true

@@ -1,0 +1,66 @@
+# Orchestrator Configuration
+# This file allows you to customize agent behavior without code changes
+
+# Intent Detection Settings
+intent_detection:
+  confidence_threshold: 0.4        # Lowered threshold for better routing
+  fallback_agent: "ChatAgent"      # Agent to use when confidence is low
+  cache_ttl_minutes: 5             # How long to cache intent detection results
+
+# Agent Routing Settings  
+agent_routing:
+  max_retries: 3                   # Maximum retries if agent fails
+  timeout_seconds: 30              # Timeout for agent processing
+  circuit_breaker_enabled: true    # Enable circuit breaker for problem agents
+
+# Custom Intent Patterns
+# Add your own patterns here to improve intent detection
+custom_intent_patterns:
+  order:
+    primary: ["buy", "purchase", "order", "get", "want", "need"]
+    secondary: ["checkout", "cart", "add to cart", "place order"]
+    context: ["product", "item", "quantity", "email"]
+    weight: 1.3                    # Higher weight = more likely to be selected
+    
+  inventory:
+    primary: ["stock", "inventory", "available", "in stock", "quantity"]
+    secondary: ["how many", "units", "left", "remaining", "supply"]
+    context: ["check", "show", "tell me", "display"]
+    weight: 1.0
+    
+  recommend:
+    primary: ["recommend", "suggest", "find", "looking for", "show me"]
+    secondary: ["best", "good", "similar", "like", "what", "which"]
+    context: ["help me", "need", "want", "any"]
+    weight: 1.0
+
+# Agent Preferences
+# Control which agents are preferred for certain scenarios
+agent_preferences:
+  prefer_order_agent_for:
+    - "sku_patterns"              # When SKU patterns are detected
+    - "email_patterns"            # When email addresses are present
+    - "quantity_patterns"         # When quantities are mentioned
+    
+  prefer_chat_agent_for:
+    - "greeting_patterns"         # For greetings and general conversation
+    - "low_confidence"            # When intent confidence is low
+    - "error_recovery"            # When other agents fail
+
+# Development Settings
+development:
+  auto_reload_on_changes: true    # Automatically reload when files change
+  debug_logging: true             # Enable debug logging
+  performance_monitoring: true    # Track performance metrics
+
+# Memory Settings
+memory:
+  conversation_history_limit: 200  # Maximum conversation turns to remember
+  user_context_ttl_hours: 72     # How long to remember user context
+  session_timeout_minutes: 120    # When to start a new session
+
+# Circuit Breaker Settings
+circuit_breaker:
+  failure_threshold: 3            # Number of failures before circuit opens
+  recovery_timeout_seconds: 60   # How long to wait before trying again
+  success_threshold: 2            # Successful calls needed to close circuit

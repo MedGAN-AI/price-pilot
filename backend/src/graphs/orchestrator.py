@@ -34,9 +34,25 @@ logger = logging.getLogger(__name__)
 global_memory = ConversationMemory()
 
 class IntentDetector:
-    """Advanced intent detection with machine learning-like scoring"""
+    """Gemini-powered intent detection with fallback to keyword-based detection"""
     
     def __init__(self):
+        # Try to initialize Gemini detector
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+            from core.gemini_intent_detector import GeminiIntentDetector
+            self.gemini_detector = GeminiIntentDetector()
+            self.use_gemini = True
+            print("✅ Using Gemini-powered intent detection")
+        except Exception as e:
+            print(f"⚠️ Gemini detector not available, using keyword fallback: {e}")
+            self.use_gemini = False
+            self._init_keyword_patterns()
+    
+    def _init_keyword_patterns(self):
+        """Initialize keyword-based fallback patterns"""
         # Enhanced keyword patterns with weights
         self.intent_patterns = {
             "chat": {
@@ -75,16 +91,35 @@ class IntentDetector:
                 "context": ["what will", "expected", "anticipated"],
                 "weight": 0.9
             }
-        }
-        
-        # Cache for performance
+        }        # Cache for performance
         self._intent_cache = {}
         self._cache_expiry = {}
         self.cache_ttl = timedelta(minutes=5)
     
     def detect_intent(self, text: str) -> Dict[str, Any]:
         """
-        Advanced intent detection with caching and contextual scoring
+        Gemini-powered intent detection with keyword fallback
+        """
+        if self.use_gemini:
+            try:
+                # Use Gemini detector
+                result = self.gemini_detector.detect_intent(text)
+                return {
+                    "intent": result["intent"],
+                    "confidence": result["confidence"],
+                    "method": "gemini",
+                    "timestamp": result["timestamp"]
+                }
+            except Exception as e:
+                print(f"⚠️ Gemini detection failed, using keyword fallback: {e}")
+                # Fall through to keyword detection
+        
+        # Keyword-based fallback detection
+        return self._keyword_detect_intent(text)
+    
+    def _keyword_detect_intent(self, text: str) -> Dict[str, Any]:
+        """
+        Fallback keyword-based intent detection
         """
         # Check cache first
         cache_key = hash(text.lower().strip())
@@ -92,27 +127,31 @@ class IntentDetector:
             datetime.now() - self._cache_expiry.get(cache_key, datetime.min) < self.cache_ttl):
             return self._intent_cache[cache_key]
         
-        lower_text = text.lower()
+        lower_text = text.lower().strip()
         scores = {}
         
-        # CRITICAL FIX: Check for explicit order patterns first
-        # Pattern: SKU, quantity, email (in any order)
+        # CRITICAL: Enhanced order pattern detection
         sku_pattern = re.search(r'[A-Z]+-[A-Z]+-\d{3}', text)
         email_pattern = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9-.]+', text)
-        quantity_pattern = re.search(r'\b\d+\b', text)
+        quantity_patterns = re.findall(r'\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b', lower_text)
         
-        if sku_pattern and email_pattern and quantity_pattern:
-            # This is definitely an order - override everything else
+        # Enhanced order detection - more flexible patterns
+        order_keywords = ['order', 'buy', 'purchase', 'get', 'want', 'need']
+        has_order_intent = any(keyword in lower_text for keyword in order_keywords)
+        
+        if sku_pattern and email_pattern and (quantity_patterns or has_order_intent):
+            # This is definitely an order - maximum confidence
             result = {
                 "intent": "order",
-                "confidence": 0.95,
-                "all_scores": {"order": 10.0},
+                "confidence": 0.98,
+                "all_scores": {"order": 15.0},
                 "detected_entities": self._extract_entities(text),
                 "order_details": {
                     "sku": sku_pattern.group(),
                     "email": email_pattern.group(),
-                    "quantity": quantity_pattern.group()
-                }
+                    "quantity": quantity_patterns[0] if quantity_patterns else "1"
+                },
+                "routing_reason": "Explicit order pattern detected (SKU + Email + Quantity/Intent)"
             }
             
             # Cache the result
@@ -121,55 +160,30 @@ class IntentDetector:
             
             return result
         
-        # Advanced scoring algorithm for other intents
-        for intent, patterns in self.intent_patterns.items():
-            score = 0.0
-            
-            # Primary keywords (high weight)
-            for keyword in patterns["primary"]:
-                if keyword in lower_text:
-                    score += 3.0
-                elif self._fuzzy_match(keyword, lower_text):
-                    score += 2.0
-            
-            # Secondary keywords (medium weight)
-            for keyword in patterns["secondary"]:
-                if keyword in lower_text:
-                    score += 2.0
-                elif self._fuzzy_match(keyword, lower_text):
-                    score += 1.0
-            
-            # Context keywords (low weight but important)
-            for keyword in patterns["context"]:
-                if keyword in lower_text:
-                    score += 1.0
-            
-            # Apply intent weight
-            score *= patterns["weight"]
-            
-            # Length penalty for very short queries
-            if len(text.strip()) < 5:
-                score *= 0.8
-            
-            # Boost for complete phrases
-            if any(phrase in lower_text for phrase in patterns["primary"]):
-                score *= 1.2
-            
-            if score > 0:
-                scores[intent] = score
+        # Enhanced semantic intent detection for ambiguous cases
+        intent_analysis = self._analyze_semantic_intent(text, lower_text)
+          
+        # Enhanced semantic intent detection for ambiguous cases
+        scores = self._analyze_semantic_intent(text, lower_text)
         
-        # Determine best intent with confidence
+        # Determine best intent with enhanced confidence scoring
         if scores:
             best_intent = max(scores, key=scores.get)
             max_score = scores[best_intent]
             total_score = sum(scores.values())
             
-            # Calculate confidence with better normalization
-            confidence = min(max_score / (total_score + 1), 0.95)
+            # Enhanced confidence calculation
+            confidence = min(max_score / (total_score + 2), 0.95)
             
             # Boost confidence if intent is clearly dominant
-            if max_score > sum(v for k, v in scores.items() if k != best_intent):
-                confidence = min(confidence * 1.3, 0.95)
+            if max_score > sum(v for k, v in scores.items() if k != best_intent) * 1.5:
+                confidence = min(confidence * 1.4, 0.95)
+                
+            # Apply minimum confidence threshold for routing
+            if confidence < 0.6:
+                best_intent = "chat"  # Default to ChatAgent for ambiguous cases
+                confidence = 0.5
+                
         else:
             best_intent = "chat"
             confidence = 0.5
@@ -178,7 +192,8 @@ class IntentDetector:
             "intent": best_intent,
             "confidence": confidence,
             "all_scores": scores,
-            "detected_entities": self._extract_entities(text)
+            "detected_entities": self._extract_entities(text),
+            "routing_reason": f"Semantic analysis - confidence: {confidence:.2f}"
         }
         
         # Cache the result
@@ -186,6 +201,71 @@ class IntentDetector:
         self._cache_expiry[cache_key] = datetime.now()
         
         return result
+    
+    def _analyze_semantic_intent(self, text: str, lower_text: str) -> Dict[str, float]:
+        """Enhanced semantic intent analysis with contextual understanding"""
+        scores = {}
+        
+        # Enhanced pattern matching with context
+        for intent, patterns in self.intent_patterns.items():
+            score = 0.0
+            
+            # Primary keywords with contextual boost
+            for keyword in patterns["primary"]:
+                if keyword in lower_text:
+                    # Context-aware scoring
+                    if intent == "order" and any(term in lower_text for term in ["want", "need", "get"]):
+                        score += 4.0  # Boost transactional intent
+                    else:
+                        score += 3.0
+                elif self._fuzzy_match(keyword, lower_text):
+                    score += 2.0
+            
+            # Secondary keywords with smart weighting
+            for keyword in patterns["secondary"]:
+                if keyword in lower_text:
+                    score += 2.0
+                elif self._fuzzy_match(keyword, lower_text):
+                    score += 1.0
+            
+            # Context keywords with intent-specific logic
+            for keyword in patterns["context"]:
+                if keyword in lower_text:
+                    score += 1.0
+            
+            # Intent-specific enhancements
+            if intent == "order":
+                # Boost for transactional language
+                transactional_words = ["buy", "purchase", "order", "get", "want", "need"]
+                score += sum(2.0 for word in transactional_words if word in lower_text)
+                
+                # Boost for product mentions
+                if re.search(r'[A-Z]+-[A-Z]+-\d{3}', text):
+                    score += 3.0
+                
+            elif intent == "recommend":
+                # Looking for suggestions
+                suggestion_words = ["suggest", "recommend", "find", "looking for", "show me"]
+                score += sum(2.0 for word in suggestion_words if word in lower_text)
+                
+            elif intent == "inventory":
+                # Stock checking language
+                stock_words = ["available", "in stock", "how many", "quantity"]
+                score += sum(2.0 for word in stock_words if word in lower_text)
+            
+            # Apply intent weight and normalization
+            score *= patterns["weight"]
+            
+            # Length and complexity adjustments
+            if len(text.strip()) < 5:
+                score *= 0.7  # Penalty for very short queries
+            elif len(text.strip()) > 100:
+                score *= 1.1  # Slight boost for detailed queries
+            
+            if score > 0:
+                scores[intent] = score
+        
+        return scores
     
     def _fuzzy_match(self, keyword: str, text: str, threshold: float = 0.8) -> bool:
         """Simple fuzzy matching for typos"""
@@ -691,3 +771,221 @@ def reset_global_memory():
 # Export the monitored version
 __all__ = ["orchestrator", "initialize_state", "performance_monitor", "monitored_invoke", 
            "get_global_memory", "get_memory_stats", "reset_global_memory", "context_manager"]
+
+class ProductionOrchestrator:
+    """
+    Production-ready orchestrator for web application integration
+    Handles routing to optimized agents with enhanced error handling
+    """
+    
+    def __init__(self):
+        self.intent_detector = IntentDetector()
+        self.context_manager = ContextManager()
+        self.performance_monitor = PerformanceMonitor()
+        
+        # Import agents lazily to avoid circular imports
+        self._agents = {}
+        self._load_agents()
+    
+    def _load_agents(self):
+        """Load all agents with error handling"""
+        try:
+            from src.agents.ChatAgent.agent import shopping_assistant
+            self._agents["chat"] = shopping_assistant
+            
+            from src.agents.OrderAgent.agent import OrderAgent
+            self._agents["order"] = OrderAgent()
+            
+            from src.agents.InventoryAgent.agent import inventory_assistant
+            self._agents["inventory"] = inventory_assistant
+            
+            from src.agents.RecommendAgent.agent import recommend_assistant  
+            self._agents["recommend"] = recommend_assistant
+            
+            from src.agents.LogisticsAgent.agent import logistics_assistant
+            self._agents["logistics"] = logistics_assistant
+            
+            from src.agents.ForecastAgent.agent import forecast_assistant
+            self._agents["forecast"] = forecast_assistant
+            
+            logger.info("✅ All agents loaded successfully")
+            
+        except Exception as e:
+            logger.error(f"❌ Error loading agents: {e}")
+            # Ensure at least ChatAgent is available as fallback
+            if "chat" not in self._agents:
+                try:
+                    from src.agents.ChatAgent.agent import shopping_assistant
+                    self._agents["chat"] = shopping_assistant
+                    logger.info("✅ ChatAgent loaded as fallback")
+                except Exception as fallback_error:
+                    logger.error(f"❌ Critical: Cannot load ChatAgent fallback: {fallback_error}")
+    
+    def process_query(self, query: str, intent_result: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Process query through the appropriate agent with enhanced error handling
+        """
+        start_time = datetime.now()
+        intent = intent_result["intent"]
+        confidence = intent_result["confidence"]
+        
+        try:
+            # Route to appropriate agent based on intent
+            if intent == "order" and "order" in self._agents:
+                logger.info(f"🛒 Routing to OrderAgent (confidence: {confidence:.2f})")
+                
+                # Use optimized OrderAgent with circuit breaker
+                order_agent = self._agents["order"]
+                response = order_agent.process_query(query)
+                
+                return {
+                    "response": response,
+                    "agent_used": "OrderAgent",
+                    "intent": intent,
+                    "confidence": confidence,
+                    "processing_time": (datetime.now() - start_time).total_seconds()
+                }
+                
+            elif intent == "inventory" and "inventory" in self._agents:
+                logger.info(f"📦 Routing to InventoryAgent (confidence: {confidence:.2f})")
+                
+                from langchain_core.messages import HumanMessage
+                state["messages"] = [HumanMessage(content=query)]
+                result = self._agents["inventory"].invoke(state)
+                
+                if result and "messages" in result and result["messages"]:
+                    response = result["messages"][-1].content
+                else:
+                    response = "I couldn't retrieve inventory information at the moment."
+                
+                return {
+                    "response": response,
+                    "agent_used": "InventoryAgent", 
+                    "intent": intent,
+                    "confidence": confidence,
+                    "processing_time": (datetime.now() - start_time).total_seconds()
+                }
+                
+            elif intent == "recommend" and "recommend" in self._agents:
+                logger.info(f"💡 Routing to RecommendAgent (confidence: {confidence:.2f})")
+                
+                from langchain_core.messages import HumanMessage
+                state["messages"] = [HumanMessage(content=query)]
+                result = self._agents["recommend"].invoke(state)
+                
+                if result and "messages" in result and result["messages"]:
+                    response = result["messages"][-1].content
+                else:
+                    response = "I couldn't generate recommendations at the moment."
+                
+                return {
+                    "response": response,
+                    "agent_used": "RecommendAgent",
+                    "intent": intent,
+                    "confidence": confidence,
+                    "processing_time": (datetime.now() - start_time).total_seconds()
+                }
+                
+            else:
+                # Default to ChatAgent for all other intents or when specialized agent unavailable
+                logger.info(f"💬 Routing to ChatAgent (intent: {intent}, confidence: {confidence:.2f})")
+                
+                from langchain_core.messages import HumanMessage, SystemMessage
+                
+                # Enhanced system message with context
+                system_msg = SystemMessage(content=f"""You are a helpful retail assistant. 
+                Current user intent: {intent} (confidence: {confidence:.2f})
+                Context: {state.get('context', {}).get('conversation_turn', 1)} conversation turn.
+                Please provide helpful assistance based on the user's request.""")
+                
+                user_msg = HumanMessage(content=query)
+                state["messages"] = [system_msg, user_msg]
+                
+                result = self._agents["chat"].invoke(state)
+                
+                if result and "messages" in result and result["messages"]:
+                    response = result["messages"][-1].content
+                else:
+                    response = "I apologize, but I'm having trouble processing your request right now. Please try again."
+                
+                return {
+                    "response": response,
+                    "agent_used": "ChatAgent",
+                    "intent": intent,
+                    "confidence": confidence,
+                    "processing_time": (datetime.now() - start_time).total_seconds()
+                }
+                
+        except Exception as e:
+            logger.error(f"❌ Agent processing error: {e}")
+            
+            # Fallback to a helpful error response
+            fallback_response = self._generate_fallback_response(query, intent, str(e))
+            
+            return {
+                "response": fallback_response,
+                "agent_used": "ErrorHandler",
+                "intent": "error",
+                "confidence": 0.0,
+                "processing_time": (datetime.now() - start_time).total_seconds(),
+                "error": str(e)
+            }
+    
+    def _generate_fallback_response(self, query: str, intent: str, error: str) -> str:
+        """Generate helpful fallback responses based on intent"""
+        
+        if intent == "order":
+            return """I apologize, but I'm having trouble processing your order request. 
+            To help you place an order, please provide:
+            1. Product SKU (like SHOES-RED-001)
+            2. Your email address  
+            3. Quantity needed
+            
+            You can also ask me to show available products first."""
+            
+        elif intent == "inventory":
+            return """I'm having trouble checking inventory right now. 
+            Please try asking about specific products like:
+            - "How many SHOES-RED-001 are in stock?"
+            - "Check inventory for red shoes"
+            
+            Or ask me to show all available products."""
+            
+        elif intent == "recommend":
+            return """I'm having trouble generating recommendations right now.
+            Please try being more specific about what you're looking for:
+            - "Recommend running shoes under $100"
+            - "Show me the best t-shirts"
+            - "What's similar to SHOES-RED-001?"
+            
+            Or ask me to show all available products."""
+            
+        else:
+            return f"""I apologize, but I'm experiencing some technical difficulties. 
+            Please try rephrasing your request or ask me to:
+            - Show available products
+            - Help you place an order
+            - Check product inventory
+            - Give recommendations
+            
+            How can I assist you?"""
+    
+    def get_agent_status(self) -> Dict[str, str]:
+        """Get status of all loaded agents"""
+        status = {}
+        for agent_name, agent in self._agents.items():
+            try:
+                # Test if agent is callable/available
+                if hasattr(agent, 'invoke') or hasattr(agent, 'process_query'):
+                    status[agent_name] = "✅ Ready"
+                else:
+                    status[agent_name] = "⚠️ Unknown"
+            except Exception as e:
+                status[agent_name] = f"❌ Error: {str(e)[:50]}"
+        
+        return status
+
+# Export the production orchestrator
+__all__ = ["orchestrator", "initialize_state", "performance_monitor", "monitored_invoke", 
+           "get_global_memory", "get_memory_stats", "reset_global_memory", "context_manager",
+           "IntentDetector", "ContextManager", "ProductionOrchestrator"]

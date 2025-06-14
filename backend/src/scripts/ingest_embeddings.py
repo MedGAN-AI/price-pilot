@@ -22,11 +22,12 @@ with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
 # Read embedding settings
-EMBEDDING_PROVIDER = config.get("embedding_provider", "google-genai-embeddings")
-EMBEDDING_MODEL    = config.get("embedding_model", "gemini-embedding-exp-03-07")
+specialized_config = config.get("specialized_config", {})
+EMBEDDING_PROVIDER = specialized_config.get("embedding_provider", "google-genai-embeddings")
+EMBEDDING_MODEL    = specialized_config.get("embedding_model", "models/text-embedding-004")
 
 # Table name (where to upsert embeddings)
-SUPABASE_TABLE = config.get("supabase_table_embeddings", "product_embeddings")
+SUPABASE_TABLE = specialized_config.get("supabase_table_embeddings", "product_embeddings")
 
 # Load API keys from environment
 load_dotenv()

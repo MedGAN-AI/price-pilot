@@ -1,0 +1,470 @@
+{
+  "timestamp": "2025-06-14T12:55:25.721469",
+  "conversation_count": 10,
+  "recent_conversations": [
+    {
+      "query": "check the order status 956a166a-ff61-40d1-ba54-8f9720d73fcf",
+      "response": "The order ID provided is not in the correct format. It seems to be a UUID, which is not the expected format. Please provide a valid order ID to check its status.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:42:31.607375",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000998,
+            "timestamp": "2025-06-14T12:42:31.610426"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 2.158003,
+            "timestamp": "2025-06-14T12:42:33.768961",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 2.159001
+      },
+      "user_context": {
+        "current_query": "check the order status 956a166a-ff61-40d1-ba54-8f9720d73fcf",
+        "timestamp": "2025-06-14T12:42:31.610426",
+        "session_id": "session_54056552",
+        "query_length": 59,
+        "query_complexity": 1.0,
+        "detected_entities": {},
+        "intent_confidence": 0.6591549295774648,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "order": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:42:33.768961"
+    },
+    {
+      "query": "check the order status 956a166a-ff61-40d1-ba54-8f9720d73fcf",
+      "response": "The order ID provided is not in the correct format. It seems to be a UUID, which is not the expected format. Please provide a valid order ID to check its status.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected, Order continuation",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:42:52.281991",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:42:52.283084"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 1.520256,
+            "timestamp": "2025-06-14T12:42:53.803812",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 1.520256
+      },
+      "user_context": {
+        "current_query": "check the order status 956a166a-ff61-40d1-ba54-8f9720d73fcf",
+        "timestamp": "2025-06-14T12:42:52.283084",
+        "session_id": "session_54056552",
+        "query_length": 59,
+        "query_complexity": 1.0,
+        "detected_entities": {},
+        "intent_confidence": 0.6591549295774648,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "pending_order": {
+          "started_at": "2025-06-14T12:42:31.610426",
+          "status": "initiated"
+        },
+        "order_continuation": true,
+        "intent_frequency": {
+          "order": 2
+        },
+        "previous_intents": [
+          {
+            "intent": "order",
+            "timestamp": "2025-06-14T12:42:31.610426",
+            "confidence": 0.6591549295774648,
+            "entities": {},
+            "query": "check the order status 956a166a-ff61-40d1-ba54-8f9720d73fcf"
+          }
+        ],
+        "session_duration": 20.672658
+      },
+      "timestamp": "2025-06-14T12:42:53.803812"
+    },
+    {
+      "query": "check the order status 8c22bd35-5c38-4e23-9c50-71aa9c7a7ac6",
+      "response": "The order ID provided is not in a valid format. Please provide a valid order ID to check the status.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:47:40.249790",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:47:40.250711"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 1.764509,
+            "timestamp": "2025-06-14T12:47:42.016228",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 1.764509
+      },
+      "user_context": {
+        "current_query": "check the order status 8c22bd35-5c38-4e23-9c50-71aa9c7a7ac6",
+        "timestamp": "2025-06-14T12:47:40.250711",
+        "session_id": "session_80939838",
+        "query_length": 59,
+        "query_complexity": 1.0,
+        "detected_entities": {},
+        "intent_confidence": 0.6591549295774648,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "order": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:47:42.017285"
+    },
+    {
+      "query": "hi",
+      "response": "Hi there! How can I help you today?",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:49:13.691249",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:49:13.692271"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.306956,
+            "timestamp": "2025-06-14T12:49:14.999973",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 1.306956
+      },
+      "user_context": {
+        "current_query": "hi",
+        "timestamp": "2025-06-14T12:49:13.692271",
+        "session_id": "session_86115964",
+        "query_length": 2,
+        "query_complexity": 0.05,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 3,
+          "chat": 1
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:49:14.999973"
+    },
+    {
+      "query": "what was my name ?",
+      "response": "I don't have your name stored in my memory yet.",
+      "intent": "chat",
+      "confidence": 0.9176470588235295,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.92",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:49:20.368955",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:49:20.370257"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 1.038905,
+            "timestamp": "2025-06-14T12:49:21.409162",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.9176470588235295
+          }
+        ],
+        "total_duration": 1.038905
+      },
+      "user_context": {
+        "current_query": "what was my name ?",
+        "timestamp": "2025-06-14T12:49:20.370257",
+        "session_id": "session_34058324",
+        "query_length": 18,
+        "query_complexity": 0.35,
+        "detected_entities": {},
+        "intent_confidence": 0.9176470588235295,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 3,
+          "chat": 2
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:49:21.409162"
+    },
+    {
+      "query": "my name is Hamza Waseem",
+      "response": "Okay Hamza, I've updated your name in my system.",
+      "intent": "chat",
+      "confidence": 0.95,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.95",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:49:31.595696",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.000998,
+            "timestamp": "2025-06-14T12:49:31.598697"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 1.067786,
+            "timestamp": "2025-06-14T12:49:32.666483",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 1.068784
+      },
+      "user_context": {
+        "current_query": "my name is Hamza Waseem",
+        "timestamp": "2025-06-14T12:49:31.597699",
+        "session_id": "session_14966719",
+        "query_length": 23,
+        "query_complexity": 0.25,
+        "detected_entities": {},
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 3,
+          "chat": 3
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:49:32.666483"
+    },
+    {
+      "query": "what was my name",
+      "response": "Your name is Hamza Waseem.",
+      "intent": "chat",
+      "confidence": 0.9176470588235295,
+      "agent_used": "Processed by ChatAgent (memory query) - Intent: chat, Confidence: 0.92",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:49:37.457933",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:49:37.458941"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent (memory query)",
+            "duration": 0.97598,
+            "timestamp": "2025-06-14T12:49:38.435963",
+            "agent": "ChatAgent (memory query)",
+            "intent": "chat",
+            "confidence": 0.9176470588235295
+          }
+        ],
+        "total_duration": 0.97598
+      },
+      "user_context": {
+        "current_query": "what was my name",
+        "timestamp": "2025-06-14T12:49:37.458941",
+        "session_id": "session_45175257",
+        "query_length": 16,
+        "query_complexity": 0.2,
+        "detected_entities": {},
+        "intent_confidence": 0.9176470588235295,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 3,
+          "chat": 4
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:49:38.435963"
+    },
+    {
+      "query": "what is the name of my family ?",
+      "response": "Your name is Hamza Waseem.",
+      "intent": "chat",
+      "confidence": 0.3333333333333333,
+      "agent_used": "Processed by ChatAgent - Intent: chat, Confidence: 0.33",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:49:46.659980",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:49:46.661081"
+          },
+          {
+            "step": "agent_dispatch_ChatAgent",
+            "duration": 1.029042,
+            "timestamp": "2025-06-14T12:49:47.690123",
+            "agent": "ChatAgent",
+            "intent": "chat",
+            "confidence": 0.3333333333333333
+          }
+        ],
+        "total_duration": 1.029042
+      },
+      "user_context": {
+        "current_query": "what is the name of my family ?",
+        "timestamp": "2025-06-14T12:49:46.661081",
+        "session_id": "session_60349709",
+        "query_length": 31,
+        "query_complexity": 0.5,
+        "detected_entities": {},
+        "intent_confidence": 0.3333333333333333,
+        "conversation_turn": 1,
+        "intent_frequency": {
+          "order": 3,
+          "chat": 5
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:49:47.691121"
+    },
+    {
+      "query": "create order for customer@example.com Hamza Koko with items [{'sku': 'HAT-GRN-005', 'quantity': 2}]",
+      "response": "Order 74b4a506-59a4-4e89-8632-90f385a602e1 created successfully for Hamza Koko with email customer@example.com. The order includes 2 Green Baseball Caps (HAT-GRN-005) for a total of $49.98. The order status is currently pending.",
+      "intent": "order",
+      "confidence": 0.95,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.95, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:55:04.004061",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:55:04.004827"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 5.806549,
+            "timestamp": "2025-06-14T12:55:09.812382",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.95
+          }
+        ],
+        "total_duration": 5.806549
+      },
+      "user_context": {
+        "current_query": "create order for customer@example.com Hamza Koko with items [{'sku': 'HAT-GRN-005', 'quantity': 2}]",
+        "timestamp": "2025-06-14T12:55:04.004827",
+        "session_id": "user_-80443355337021",
+        "query_length": 99,
+        "query_complexity": 0.8,
+        "detected_entities": {
+          "product_codes": [
+            "HAT-GRN"
+          ],
+          "numbers": [
+            "005",
+            "2"
+          ],
+          "emails": [
+            "customer@example.com"
+          ]
+        },
+        "intent_confidence": 0.95,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "order": 4,
+          "chat": 5
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:55:09.813155"
+    },
+    {
+      "query": "check the order status 74b4a506-59a4-4e89-8632-90f385a602e1",
+      "response": "The order ID provided is not in the correct format. Please provide a valid order ID to check its status.",
+      "intent": "order",
+      "confidence": 0.85,
+      "agent_used": "Processed by OrderAgent - Intent: order, Confidence: 0.85, Order context detected",
+      "performance_metrics": {
+        "start_time": "2025-06-14T12:55:24.252700",
+        "processing_steps": [
+          {
+            "step": "intent_routing",
+            "duration": 0.0,
+            "timestamp": "2025-06-14T12:55:24.253711"
+          },
+          {
+            "step": "agent_dispatch_OrderAgent",
+            "duration": 1.466747,
+            "timestamp": "2025-06-14T12:55:25.721469",
+            "agent": "OrderAgent",
+            "intent": "order",
+            "confidence": 0.85
+          }
+        ],
+        "total_duration": 1.466747
+      },
+      "user_context": {
+        "current_query": "check the order status 74b4a506-59a4-4e89-8632-90f385a602e1",
+        "timestamp": "2025-06-14T12:55:24.253711",
+        "session_id": "session_88491838",
+        "query_length": 59,
+        "query_complexity": 1.0,
+        "detected_entities": {
+          "numbers": [
+            "8632"
+          ]
+        },
+        "intent_confidence": 0.6591549295774648,
+        "conversation_turn": 1,
+        "is_order_request": true,
+        "order_initiated": true,
+        "intent_frequency": {
+          "order": 5,
+          "chat": 5
+        },
+        "previous_intents": [],
+        "session_duration": 0
+      },
+      "timestamp": "2025-06-14T12:55:25.721469"
+    }
+  ]
+}

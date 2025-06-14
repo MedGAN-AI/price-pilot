@@ -1,0 +1,32 @@
+# ForecastAgent Configuration - Standardized Core Format
+
+llm:
+  provider: "google-genai"
+  model: "gemini-1.5-flash"
+  temperature: 0.0
+
+agent:
+  type: "tool_calling"  # Uses Tool Calling pattern for ML integration
+  max_iterations: 10
+  early_stopping_method: "generate"
+  max_execution_time: 60
+
+specialized_config:
+  # ForecastAgent specific configurations
+  use_supabase: false
+  sku_pattern: "^[A-Z0-9\\-]{5,}$"
+  context_key: "forecast_context"
+  
+  # ML and forecasting settings
+  model_path: "models/arima_model.pkl"
+  default_forecast_periods: 7
+  max_forecast_periods: 30
+  enable_trend_analysis: true
+  cache_forecasts: true
+  
+# Agent-specific settings
+forecast_settings:
+  supported_models: ["arima", "linear_regression"]
+  confidence_intervals: true
+  include_performance_metrics: true
+  data_validation: true

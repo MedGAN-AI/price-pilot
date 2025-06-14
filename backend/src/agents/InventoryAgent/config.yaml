@@ -1,0 +1,28 @@
+# InventoryAgent Configuration - Standardized Core Format
+
+llm:
+  provider: "google-genai"
+  model: "gemini-2.0-flash"
+  temperature: 0.0
+
+agent:
+  type: "react"  # Uses ReAct pattern for inventory queries
+  max_iterations: 10
+  early_stopping_method: "generate"
+  max_execution_time: 30
+
+specialized_config:
+  # InventoryAgent specific configurations
+  use_supabase: false
+  sku_pattern: "^[A-Z0-9\\-]{5,}$"
+  stop_keywords: []  # No special stopping keywords for inventory
+  context_key: "inventory_context"
+  
+  # Inventory settings
+  default_stock_threshold: 10
+  check_multiple_skus: true
+  
+# Agent-specific settings
+inventory_settings:
+  enable_low_stock_alerts: true
+  cache_stock_queries: false

@@ -1,6 +1,0 @@
-mlflow==2.22.0
-cloudpickle==3.1.1
-numpy==1.26.3
-pandas==2.1.4
-scipy==1.15.2
-statsmodels==0.14.4

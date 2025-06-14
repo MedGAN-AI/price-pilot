@@ -17,10 +17,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-# Import ChatAgent for Flow A architecture
-from src.agents.ChatAgent.agent import shopping_assistant, initialize_state
+# Import self-updating orchestrator system
+from src.core.self_updating_orchestrator import get_orchestrator, reload_orchestrator
+from src.core.agent_registry import get_agent_registry
 from src.agents.ChatAgent.tools.memory_tools import conversation_memory
 from langchain_core.messages import HumanMessage, SystemMessage
+
+# Initialize self-updating orchestrator
+orchestrator = get_orchestrator()
+agent_registry = get_agent_registry()
 
 # Configure logging
 logging.basicConfig(
@@ -85,30 +90,18 @@ app.add_middleware(
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with self-updating orchestrator"""
     try:
-        # Test orchestrator import
-        shopping_assistant_status = "✅ Ready" if shopping_assistant else "❌ Failed"
+        # Get system status from orchestrator
+        system_status = orchestrator.get_system_status()
         
-        # Test memory system
-        memory_status = "✅ Ready" if conversation_memory else "❌ Failed"
-        
-        agents_status = {
-            "chat_agent": shopping_assistant_status,
-            "memory_system": memory_status,
-            "order_agent": "✅ Ready", 
-            "inventory_agent": "✅ Ready",
-            "recommend_agent": "✅ Ready",
-            "logistics_agent": "✅ Ready",
-            "forecast_agent": "✅ Ready"
-        }
-        
+        agents_status = system_status.get("agent_status", {})
         overall_status = "healthy" if all("✅" in status for status in agents_status.values()) else "degraded"
         
         return HealthResponse(
             status=overall_status,
             timestamp=datetime.now().isoformat(),
-            version="2.0.0",
+            version="2.1.0-dynamic",
             agents_status=agents_status
         )
     except Exception as e:
@@ -119,48 +112,43 @@ async def health_check():
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     """
-    Main chat endpoint - processes user messages through ChatAgent Flow A architecture
+    Self-updating chat endpoint - automatically adapts to agent changes
     """
     try:
         logger.info(f"Processing chat request: {request.message[:100]}...")
         
-        # Initialize orchestrator state
-        state = initialize_state()
+        # Process through self-updating orchestrator
+        result = orchestrator.process_query(
+            query=request.message,
+            session_id=request.session_id
+        )
         
-        # Add system message for context
-        system_msg = SystemMessage(content="You are a helpful retail assistant.")
-        user_msg = HumanMessage(content=request.message)
+        # Save to memory for context continuity
+        conversation_memory.add_interaction(request.message, result["response"])
         
-        state["messages"] = [system_msg, user_msg]
-        
-        # Process through orchestrator (which routes to ChatAgent)
-        result = shopping_assistant.invoke(state)
-        
-        # Extract response
-        if result and "messages" in result and result["messages"]:
-            response_content = result["messages"][-1].content
-            
-            # Get intent and confidence from orchestrator state
-            intent = result.get("intent", "chat")
-            confidence = result.get("confidence", 0.5)
-            
-            # Generate session ID if not provided
-            session_id = request.session_id or f"session_{hash(request.message)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            
-            return ChatResponse(
-                response=response_content,
-                session_id=session_id,
-                intent=intent,
-                confidence=confidence,
-                agent_used="ChatAgent",
-                timestamp=datetime.now().isoformat()
-            )
-        else:
-            raise HTTPException(status_code=500, detail="No response generated")
+        return ChatResponse(
+            response=result["response"],
+            session_id=result["session_id"],
+            intent=result["intent"],
+            confidence=result["confidence"],
+            agent_used=result["agent_used"],
+            timestamp=result["timestamp"]
+        )
             
     except Exception as e:
         logger.error(f"Chat endpoint error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        
+        # Generate helpful error response
+        error_response = orchestrator._generate_fallback_response(request.message, str(e))
+        
+        return ChatResponse(
+            response=error_response,
+            session_id=request.session_id or f"error_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            intent="error",
+            confidence=0.0,
+            agent_used="ErrorHandler",
+            timestamp=datetime.now().isoformat()
+        )
 
 # Memory endpoints
 @app.get("/memory/context/{session_id}")
@@ -198,6 +186,55 @@ async def clear_conversation_memory():
 async def get_agents_status():
     """Get status of all agents"""
     try:
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "system_status": orchestrator.get_system_status(),
+            "registry_info": agent_registry.get_registry_info()
+        }
+    except Exception as e:
+        logger.error(f"Agent status error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting agent status: {str(e)}")
+
+# System management endpoints
+@app.post("/system/reload")
+async def reload_system():
+    """Reload the entire agent system (for development)"""
+    try:
+        orchestrator.reload_system()
+        return {
+            "status": "success",
+            "message": "System reloaded successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"System reload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error reloading system: {str(e)}")
+
+@app.post("/agents/{agent_name}/reload")
+async def reload_agent(agent_name: str):
+    """Reload a specific agent"""
+    try:
+        agent_registry.reload_agent(agent_name)
+        return {
+            "status": "success", 
+            "message": f"Agent {agent_name} reloaded successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Agent reload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error reloading agent {agent_name}: {str(e)}")
+
+@app.get("/system/config")
+async def get_system_config():
+    """Get current system configuration"""
+    try:
+        return {
+            "config": orchestrator.config,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Config retrieval error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving config: {str(e)}")
         return {
             "agents": {
                 "ChatAgent": "✅ Active - Coordinating all requests",

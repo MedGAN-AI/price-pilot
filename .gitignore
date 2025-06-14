@@ -185,4 +185,5 @@ notebooks
 
 .env
 logs/
+node_modules/
 

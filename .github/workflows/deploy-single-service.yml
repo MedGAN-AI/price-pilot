@@ -1,27 +1,29 @@
 name: Deploy Full Stack to Google Cloud Run
+
 on:
   push:
     branches: [main]
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
-    - name: Set up gcloud
+    - name: Set up gcloud authentication
       uses: google-github-actions/auth@v2
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
     
-    - name: Configure Docker for Artifact Registry
-      run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
-    
     - name: Set up Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: google-github-actions/setup-gcloud@v2
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        install_components: 'beta'
+    
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
     
     - name: Enable required APIs
       run: |
@@ -29,13 +31,12 @@ jobs:
         gcloud services enable artifactregistry.googleapis.com
         gcloud services enable cloudbuild.googleapis.com
     
-    # Deploy Backend
-    - name: Build Backend Docker image
+    # Deploy Backend First
+    - name: Build and Push Backend Docker image
       run: |
+        echo "Building backend image..."
         docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/backend ./backend
-    
-    - name: Push Backend Docker image
-      run: |
+        echo "Pushing backend image..."
         docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/backend
     
     - name: Deploy Backend to Cloud Run
@@ -55,17 +56,31 @@ jobs:
     - name: Get Backend URL
       id: backend-url
       run: |
+        # Wait a moment for deployment to be ready
+        sleep 10
         BACKEND_URL=$(gcloud run services describe backend --region=${{ secrets.GCP_REGION }} --format='value(status.url)')
+        echo "Backend URL: $BACKEND_URL"
         echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
     
     # Deploy Frontend
+    - name: Debug Frontend Build Context
+      run: |
+        echo "Frontend directory contents:"
+        ls -la ./frontend/
+        echo "Frontend package.json:"
+        cat ./frontend/package.json
+    
     - name: Build Frontend Docker image
       run: |
-        docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/frontend ./frontend \
-          --build-arg VITE_API_URL=${{ steps.backend-url.outputs.url }}
+        echo "Building frontend image with API URL: ${{ steps.backend-url.outputs.url }}"
+        docker build \
+          --build-arg VITE_API_URL=${{ steps.backend-url.outputs.url }} \
+          -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/frontend \
+          ./frontend
     
     - name: Push Frontend Docker image
       run: |
+        echo "Pushing frontend image..."
         docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/frontend
     
     - name: Deploy Frontend to Cloud Run
@@ -75,4 +90,12 @@ jobs:
           --platform managed \
           --region ${{ secrets.GCP_REGION }} \
           --allow-unauthenticated \
-          --port 80
+          --port 80 \
+          --memory 256Mi \
+          --cpu 1
+    
+    - name: Get Frontend URL
+      run: |
+        FRONTEND_URL=$(gcloud run services describe frontend --region=${{ secrets.GCP_REGION }} --format='value(status.url)')
+        echo "Frontend URL: $FRONTEND_URL"
+        echo "Backend URL: ${{ steps.backend-url.outputs.url }}"

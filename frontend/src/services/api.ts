@@ -73,6 +73,22 @@ export interface ProductFromAPI {
   category: string;
 }
 
+export interface OrderRequest {
+  customer_email: string;
+  customer_name: string;
+  items: string; // JSON string of order items
+  shipping_address?: string;
+  billing_address?: string;
+  payment_method?: string;
+}
+
+export interface OrderResponse {
+  success: boolean;
+  order_id?: string;
+  message?: string;
+  error?: string;
+}
+
 export interface HealthResponse {
   status: string;
   timestamp: string;
@@ -201,6 +217,19 @@ export const apiService = {
     const response = await apiClient.get(`/memory/context/${sessionId}`);
     return response.data;
   },
+
+  // Create order using OrderAgent
+  async createOrder(orderRequest: OrderRequest): Promise<OrderResponse> {
+    return retryRequest(async () => {
+      const response = await apiClient.post('/order/create', orderRequest);
+      return response.data;
+    });
+  },
+};
+
+// Export the createOrder function for direct use
+export const createOrder = (orderRequest: OrderRequest): Promise<OrderResponse> => {
+  return apiService.createOrder(orderRequest);
 };
 
 export default apiService;

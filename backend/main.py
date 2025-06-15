@@ -83,6 +83,20 @@ class AnalyticsResponse(BaseModel):
     intent_performance: Dict[str, Any] = Field(..., description="Performance by intent")
     improvement_suggestions: List[Dict[str, Any]] = Field(..., description="Improvement suggestions")
 
+class OrderRequest(BaseModel):
+    customer_email: str = Field(..., description="Customer email")
+    customer_name: str = Field(..., description="Customer full name") 
+    items: str = Field(..., description="JSON string of order items")
+    shipping_address: Optional[str] = Field(None, description="Shipping address")
+    billing_address: Optional[str] = Field(None, description="Billing address")
+    payment_method: Optional[str] = Field("credit_card", description="Payment method")
+
+class OrderResponse(BaseModel):
+    success: bool
+    order_id: Optional[str] = None
+    message: Optional[str] = None
+    error: Optional[str] = None
+
 # Application lifecycle management
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -106,7 +120,7 @@ app = FastAPI(
 # Add CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],  # React dev servers
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -235,236 +249,96 @@ async def reload_system():
         logger.error(f"System reload error: {e}")
         raise HTTPException(status_code=500, detail=f"Error reloading system: {str(e)}")
 
-@app.post("/agents/{agent_name}/reload")
-async def reload_agent(agent_name: str):
-    """Reload a specific agent"""
+# Order management endpoint
+@app.post("/order/create", response_model=OrderResponse)
+async def create_order(request: OrderRequest):
+    """Create a new order using the OrderAgent"""
     try:
-        agent_registry.reload_agent(agent_name)
-        return {
-            "status": "success", 
-            "message": f"Agent {agent_name} reloaded successfully",
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Agent reload error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error reloading agent {agent_name}: {str(e)}")
-
-@app.get("/system/config")
-async def get_system_config():
-    """Get current system configuration"""
-    try:
-        return {
-            "config": orchestrator.config,
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Config retrieval error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error retrieving config: {str(e)}")
-        return {
-            "agents": {
-                "ChatAgent": "✅ Active - Coordinating all requests",
-                "OrderAgent": "✅ Ready - Order management",
-                "InventoryAgent": "✅ Ready - Stock checking", 
-                "RecommendAgent": "✅ Ready - Product recommendations",
-                "LogisticsAgent": "✅ Ready - Shipping & tracking",
-                "ForecastAgent": "✅ Ready - Demand forecasting"
-            },
-            "architecture": "Flow A - All requests through ChatAgent",
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        logger.error(f"Agents status error: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting agent status: {str(e)}")
-
-# ==================== FEEDBACK COLLECTION ENDPOINTS ====================
-
-@app.post("/feedback/collect", response_model=FeedbackResponse)
-async def collect_feedback(feedback: FeedbackRequest):
-    """
-    Collect user feedback for intent prediction improvement
-    """
-    try:
-        gemini_detector = get_gemini_detector()
+        logger.info(f"Creating order for customer: {request.customer_email}")
         
-        success = gemini_detector.collect_feedback(
-            query=feedback.query,
-            predicted_intent=feedback.predicted_intent,
-            actual_intent=feedback.actual_intent,
-            confidence=feedback.confidence,
-            user_rating=feedback.user_rating,
-            feedback_notes=feedback.feedback_notes
+        # Format the message for the OrderAgent
+        order_message = f"""Create an order with the following details:
+Customer Email: {request.customer_email}
+Customer Name: {request.customer_name}  
+Items: {request.items}
+Shipping Address: {request.shipping_address or "TBD - Address collection needed"}
+Billing Address: {request.billing_address or "TBD - Address collection needed"}
+Payment Method: {request.payment_method or "credit_card"}"""
+
+        # Process through orchestrator to reach OrderAgent
+        result = orchestrator.process_query(
+            query=order_message,
+            session_id=f"order_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
+          # Parse the response to extract order information
+        response_text = result.get('response', '')
+        logger.info(f"OrderAgent response: {response_text}")  # Debug log
         
-        if success:
-            logger.info(f"✅ Feedback collected for query: '{feedback.query[:50]}...'")
-            return FeedbackResponse(
+        # Look for order ID in the response - it should be in the format "Order XXXX-XXXX-XXXX has been created"
+        import re
+        import json
+        
+        # Try to find JSON in the agent response first
+        json_match = re.search(r'\{[^}]*"success"[^}]*\}', response_text)
+        if json_match:
+            try:
+                order_data = json.loads(json_match.group(0))
+                if order_data.get('success'):
+                    return OrderResponse(
+                        success=True,
+                        order_id=order_data.get('order_id'),
+                        message=order_data.get('message', 'Order created successfully')
+                    )
+            except json.JSONDecodeError:
+                pass
+        
+        # Updated regex patterns to match the actual response format
+        order_id_patterns = [
+            r'Order ([a-f0-9-]{36}) has been successfully created',  # New pattern
+            r'Order ([a-f0-9-]{36}) has been created successfully',  # Original pattern
+            r'([a-f0-9-]{36})[^a-f0-9-].*has been.*created',        # Flexible pattern
+        ]
+        
+        order_id = None
+        for pattern in order_id_patterns:
+            match = re.search(pattern, response_text)
+            if match:
+                order_id = match.group(1)
+                break
+        
+        # Check if the response indicates success
+        success_indicators = [
+            "has been successfully created",
+            "created successfully", 
+            "order has been created",
+            "successfully created"
+        ]
+        
+        is_success = any(indicator in response_text.lower() for indicator in success_indicators)
+        
+        if is_success:
+            # If we don't have an order ID yet, try to extract any UUID from the response
+            if not order_id:
+                uuid_match = re.search(r'([a-f0-9-]{36})', response_text)
+                order_id = uuid_match.group(1) if uuid_match else None
+            
+            return OrderResponse(
                 success=True,
-                message="Feedback collected successfully. Thank you for helping us improve!"
-            )
-        else:
-            return FeedbackResponse(
-                success=False,
-                message="Failed to collect feedback. Please try again."
-            )
+                order_id=order_id,
+                message="Order created successfully"
+            )        
+        # If we get here, the order creation failed
+        logger.error(f"Order creation failed. Full response: {response_text}")
+        return OrderResponse(
+            success=False,
+            error="Order creation failed",
+            message=f"Order processing failed. Response: {response_text[:200]}..."
+        )
             
     except Exception as e:
-        logger.error(f"Failed to collect feedback: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to collect feedback: {str(e)}")
-
-@app.get("/feedback/analytics", response_model=AnalyticsResponse)
-async def get_feedback_analytics():
-    """
-    Get comprehensive feedback analytics and performance metrics
-    """
-    try:
-        gemini_detector = get_gemini_detector()
-        analytics = gemini_detector.get_feedback_analytics()
-        
-        if analytics.get("status") == "No feedback data available":
-            return AnalyticsResponse(
-                period="No data",
-                overall_accuracy=0.0,
-                total_feedback_entries=0,
-                intent_performance={},
-                improvement_suggestions=[{
-                    "issue": "No feedback data available",
-                    "suggestion": "Start collecting user feedback to enable analytics",
-                    "priority": "high"
-                }]
-            )
-        
-        return AnalyticsResponse(
-            period=analytics.get("period", "Unknown"),
-            overall_accuracy=analytics.get("overall_accuracy", 0.0),
-            total_feedback_entries=analytics.get("total_feedback_entries", 0),
-            intent_performance=analytics.get("intent_performance", {}),
-            improvement_suggestions=analytics.get("improvement_suggestions", [])
+        logger.error(f"Order creation error: {e}")
+        return OrderResponse(
+            success=False,
+            error=str(e),
+            message=f"Failed to create order: {str(e)}"
         )
-        
-    except Exception as e:
-        logger.error(f"Failed to get analytics: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
-
-@app.post("/feedback/optimize")
-async def auto_optimize_system():
-    """
-    Automatically optimize the system based on collected feedback
-    """
-    try:
-        gemini_detector = get_gemini_detector()
-        optimization_results = gemini_detector.auto_optimize_from_feedback()
-        
-        logger.info("🔧 System optimization completed")
-        return {
-            "success": True,
-            "message": "System optimization completed",
-            "optimization_results": optimization_results
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to optimize system: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to optimize system: {str(e)}")
-
-@app.get("/feedback/stats")
-async def get_feedback_stats():
-    """
-    Get basic feedback statistics
-    """
-    try:
-        gemini_detector = get_gemini_detector()
-        stats = gemini_detector.get_performance_stats()
-        
-        return {
-            "success": True,
-            "stats": stats
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to get feedback stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get stats: {str(e)}")
-
-# ==================== GEMINI DETECTOR ENDPOINTS ====================
-
-@app.get("/detector/status")
-async def get_detector_status():
-    """
-    Get Gemini detector status and configuration
-    """
-    try:
-        gemini_detector = get_gemini_detector()
-        stats = gemini_detector.get_performance_stats()
-        
-        return {
-            "detector_type": "Gemini Embeddings",
-            "model": stats.get("gemini_model", "text-embedding-004"),
-            "status": "active",
-            "similarity_threshold": stats.get("similarity_threshold", 0.4),
-            "intents_configured": stats.get("intents_configured", 0),
-            "total_predictions": stats.get("total_predictions", 0),
-            "feedback_entries": stats.get("total_feedback_entries", 0),
-            "recent_accuracy": stats.get("recent_accuracy"),
-            "learning_enabled": stats.get("learning_enabled", True)
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to get detector status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get detector status: {str(e)}")
-
-@app.post("/detector/reload")
-async def reload_detector():
-    """
-    Reload the Gemini detector system
-    """
-    try:
-        gemini_detector = get_gemini_detector()
-        gemini_detector.reload_system()
-        
-        logger.info("🔄 Gemini detector reloaded")
-        return {
-            "success": True,
-            "message": "Gemini detector reloaded successfully"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to reload detector: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to reload detector: {str(e)}")
-
-# Root endpoint
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "service": "Price Pilot API",
-        "version": "2.0.0",
-        "architecture": "ChatAgent Flow A",
-        "status": "🚀 Ready",
-        "endpoints": {
-            "chat": "/chat",
-            "health": "/health", 
-            "agents": "/agents/status",
-            "memory": "/memory/context/{session_id}",
-            "docs": "/docs"
-        }
-    }
-
-# Error handlers
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    """Global exception handler"""
-    logger.error(f"Unhandled exception: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
-    )
-
-if __name__ == "__main__":
-    import uvicorn
-    
-    # Run the application
-    uvicorn.run(
-        "main:app",  # Import string for proper reload
-        host="0.0.0.0",
-        port=8000,
-        log_level="info",
-        reload=True  # Set to True for development
-    )

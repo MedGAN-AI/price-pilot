@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCart } from '../../contexts/CartContext';
 import { Trash2, Plus, Minus, ShoppingBag, X } from 'lucide-react';
+import Checkout from './Checkout';
 
 const ShoppingCart: React.FC = () => {
   const { cart, updateQuantity, removeFromCart, clearCart, toggleCart } = useCart();
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
   if (!cart.isOpen) return null;
 
@@ -142,21 +144,22 @@ const ShoppingCart: React.FC = () => {
                   className="btn-secondary"
                 >
                   Clear Cart
-                </button>
-                <button
-                  onClick={() => {
-                    // TODO: Implement checkout
-                    alert('Checkout functionality coming soon!');
-                  }}
+                </button>                <button
+                  onClick={() => setIsCheckoutOpen(true)}
                   className="btn-primary"
                 >
                   Checkout
                 </button>
               </div>
-            </div>
-          </div>
+            </div>          </div>
         )}
       </div>
+      
+      {/* Checkout Modal */}
+      <Checkout 
+        isOpen={isCheckoutOpen} 
+        onClose={() => setIsCheckoutOpen(false)} 
+      />
     </>
   );
 };

@@ -1,5 +1,6 @@
 import type { Product } from '../types/cart';
 import type { ProductFromAPI } from '../services/api';
+import { getProductImage } from './productImages';
 
 /**
  * Converts backend product format to frontend cart format
@@ -17,6 +18,7 @@ export const convertAPIProductToCartProduct = (apiProduct: ProductFromAPI): Prod
     availability: 'in_stock', // Default to in stock for backend products
     rating: 4.0 + Math.random() * 1.0, // Random rating between 4-5
     reviews: Math.floor(Math.random() * 500) + 50, // Random reviews
+    image: getProductImage(apiProduct.sku, apiProduct.name, apiProduct.category),
   };
 };
 
@@ -35,8 +37,7 @@ export const extractProductsFromResponse = (responseText: string): Product[] => 
       if (match) {
         const [, name, sku, price, description] = match;
         const priceNumber = parseFloat(price.replace('$', ''));
-        
-        if (name && sku && priceNumber > 0) {
+          if (name && sku && priceNumber > 0) {
           products.push({
             id: sku.trim(),
             name: name.trim(),
@@ -46,6 +47,7 @@ export const extractProductsFromResponse = (responseText: string): Product[] => 
             availability: 'in_stock',
             rating: 4.0 + Math.random() * 1.0,
             reviews: Math.floor(Math.random() * 500) + 50,
+            image: getProductImage(sku.trim(), name.trim(), categorizeProduct(name, description)),
           });
         }
       }

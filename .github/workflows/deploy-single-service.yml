@@ -1,0 +1,68 @@
+name: Deploy Full Stack to Google Cloud Run
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up gcloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+    
+    - name: Configure Docker
+      run: gcloud auth configure-docker
+    
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        install_components: 'beta'
+    
+    # Deploy Backend
+    - name: Build Backend Docker image
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend ./backend
+    
+    - name: Push Backend Docker image
+      run: |
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend
+    
+    - name: Deploy Backend to Cloud Run
+      run: |
+        gcloud run deploy backend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend \
+          --platform managed \
+          --region ${{ secrets.GCP_REGION }} \
+          --allow-unauthenticated \
+          --port 8000
+    
+    # Get Backend URL for Frontend
+    - name: Get Backend URL
+      id: backend-url
+      run: |
+        BACKEND_URL=$(gcloud run services describe backend --region=${{ secrets.GCP_REGION }} --format='value(status.url)')
+        echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+    
+    # Deploy Frontend
+    - name: Build Frontend Docker image
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend ./frontend \
+          --build-arg VITE_API_URL=${{ steps.backend-url.outputs.url }}
+    
+    - name: Push Frontend Docker image
+      run: |
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
+    
+    - name: Deploy Frontend to Cloud Run
+      run: |
+        gcloud run deploy frontend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend \
+          --platform managed \
+          --region ${{ secrets.GCP_REGION }} \
+          --allow-unauthenticated \
+          --port 80

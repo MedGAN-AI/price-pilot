@@ -14,8 +14,8 @@ Price Pilot consists of specialized AI agents that work together to handle diffe
 - **OrderAgent**: Order processing and ERP integration
 - **LogisticsAgent**: Shipment tracking with Aramex and Naqel carriers
 - **ForecastAgent**: Demand prediction using ARIMA models
-- **RecommendAgent**: AI-powered product recommendations
-
+- **RecommendAgent**: AI-powered product recommendations 
+ 
 ##  Quick Start
 
 ### Prerequisites

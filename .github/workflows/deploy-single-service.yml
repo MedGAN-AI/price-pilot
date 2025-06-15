@@ -23,6 +23,12 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         install_components: 'beta'
     
+    - name: Enable required APIs
+      run: |
+        gcloud services enable run.googleapis.com
+        gcloud services enable artifactregistry.googleapis.com
+        gcloud services enable cloudbuild.googleapis.com
+    
     # Deploy Backend
     - name: Build Backend Docker image
       run: |
@@ -39,7 +45,11 @@ jobs:
           --platform managed \
           --region ${{ secrets.GCP_REGION }} \
           --allow-unauthenticated \
-          --port 8000
+          --port 8000 \
+          --timeout 300 \
+          --memory 512Mi \
+          --cpu 1 \
+          --set-env-vars="SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_KEY=${{ secrets.SUPABASE_KEY }},GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}"
     
     # Get Backend URL for Frontend
     - name: Get Backend URL

@@ -14,8 +14,8 @@ jobs:
       with:
         credentials_json: '${{ secrets.GCP_SA_KEY }}'
     
-    - name: Configure Docker
-      run: gcloud auth configure-docker
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
     
     - name: Set up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
@@ -26,16 +26,16 @@ jobs:
     # Deploy Backend
     - name: Build Backend Docker image
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend ./backend
+        docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/backend ./backend
     
     - name: Push Backend Docker image
       run: |
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend
+        docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/backend
     
     - name: Deploy Backend to Cloud Run
       run: |
         gcloud run deploy backend \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend \
+          --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/backend \
           --platform managed \
           --region ${{ secrets.GCP_REGION }} \
           --allow-unauthenticated \
@@ -51,17 +51,17 @@ jobs:
     # Deploy Frontend
     - name: Build Frontend Docker image
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend ./frontend \
+        docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/frontend ./frontend \
           --build-arg VITE_API_URL=${{ steps.backend-url.outputs.url }}
     
     - name: Push Frontend Docker image
       run: |
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
+        docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/frontend
     
     - name: Deploy Frontend to Cloud Run
       run: |
         gcloud run deploy frontend \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend \
+          --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/frontend \
           --platform managed \
           --region ${{ secrets.GCP_REGION }} \
           --allow-unauthenticated \
